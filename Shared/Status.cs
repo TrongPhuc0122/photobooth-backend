@@ -8,19 +8,3 @@ public enum Status
     CONNECTED,
     DISCONNECTED
 }
-
-public class StatusExtenTion
-{
-    public string StatusToText(Status status)
-    {
-        return status switch
-        {
-            Status.ERROR => "Error",
-            Status.ONLINE => "Online",
-            Status.OFFLINE => "Offline",
-            Status.CONNECTED => "Connected",
-            Status.DISCONNECTED => "Disconnected",
-            _ => "Undefined"
-        };
-    }
-}

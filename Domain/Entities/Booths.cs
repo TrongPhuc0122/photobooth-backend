@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Domain.Entities.Commons;
 
 namespace Domain.Entities
 {
-    public class Booths
+    public class Booths : BaseEntity
     {
         [Key]
-        public int BoothId{ get; set; }
+        public Guid BoothId{ get; set; }
         public string BoothIp{ get; set; } = string.Empty;
         public string BoothName{ get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
@@ -15,7 +16,7 @@ namespace Domain.Entities
         public DateTime CreatedAt{ get; set; } = DateTime.UtcNow;
 
         [ForeignKey("BranchId")]
-        public virtual Branch? Branch{ get; set; }
+        public virtual Branch Branch{ get; set; } = null!;
 
         public virtual BoothHealth? BoothHealth { get; set; }
 

@@ -7,7 +7,7 @@ namespace Domain.Entities
     {
         [Key]
         public int ErrorId{ get; set; }
-        public int BoothId{ get; set; }
+        public Guid BoothId{ get; set; }
         public string ErrorCode{ get; set; } = string.Empty;
         public string Cause { get; set; } = string.Empty;
         public string? Solution { get; set; }

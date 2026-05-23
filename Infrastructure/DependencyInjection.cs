@@ -30,6 +30,7 @@ namespace Infrastructure
             services.AddScoped<IBranchService, BranchService>();
             services.AddScoped<IBoothService, BoothService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IVoucherService, VoucherService>();
             
             return services;
         }

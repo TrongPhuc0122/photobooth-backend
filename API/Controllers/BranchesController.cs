@@ -1,3 +1,4 @@
+using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,9 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetAll([FromQuery]BranchQueryParameters parameters)
         {
-            var result = _branchService.GetAll();
+            var result = _branchService.GetAll(parameters);
             return ToActionResult(result);
         }
 
@@ -29,7 +30,6 @@ namespace API.Controllers
             var result = _branchService.GetById(id);
             return ToActionResult(result);
         }
-
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateBranchDto model)

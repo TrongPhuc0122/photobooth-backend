@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class FixDataType : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,12 +22,31 @@ namespace Infrastructure.Migrations
                     Creator = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ManagerName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Branches", x => x.BranchId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Payments",
+                columns: table => new
+                {
+                    PaymentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Method = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TransactionRef = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
                 });
 
             migrationBuilder.CreateTable(
@@ -43,7 +62,10 @@ namespace Infrastructure.Migrations
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UsageLimit = table.Column<int>(type: "int", nullable: false),
-                    UsageCount = table.Column<int>(type: "int", nullable: false)
+                    UsageCount = table.Column<int>(type: "int", nullable: false),
+                    Creator = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -54,14 +76,15 @@ namespace Infrastructure.Migrations
                 name: "Booths",
                 columns: table => new
                 {
-                    BoothId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     BoothIp = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BoothName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Brand = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BranchId = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Creator = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -80,10 +103,12 @@ namespace Infrastructure.Migrations
                 {
                     ErrorId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    BoothId = table.Column<int>(type: "int", nullable: false),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ErrorCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Cause = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Solution = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsFixed = table.Column<bool>(type: "bit", nullable: false),
+                    ResolvedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -101,8 +126,8 @@ namespace Infrastructure.Migrations
                 name: "BoothHealth",
                 columns: table => new
                 {
-                    BoothId = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     LastHeartbeat = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -120,7 +145,7 @@ namespace Infrastructure.Migrations
                 name: "BoothResources",
                 columns: table => new
                 {
-                    BoothId = table.Column<int>(type: "int", nullable: false),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     PaperCount = table.Column<int>(type: "int", nullable: false),
                     PaperMax = table.Column<int>(type: "int", nullable: false),
                     RibbonCount = table.Column<int>(type: "int", nullable: false),
@@ -145,7 +170,7 @@ namespace Infrastructure.Migrations
                     InvoiceId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     InvoiceCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BoothId = table.Column<int>(type: "int", nullable: false),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     VoucherId = table.Column<int>(type: "int", nullable: true),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     FinalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
@@ -175,7 +200,7 @@ namespace Infrastructure.Migrations
                 {
                     PhotoId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    BoothId = table.Column<int>(type: "int", nullable: false),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PrintCount = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -231,6 +256,9 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Invoices");
+
+            migrationBuilder.DropTable(
+                name: "Payments");
 
             migrationBuilder.DropTable(
                 name: "Photos");

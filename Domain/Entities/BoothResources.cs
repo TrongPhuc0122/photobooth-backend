@@ -6,7 +6,7 @@ namespace Domain.Entities
     public class BoothResources
     {
         [Key]
-        public int BoothId{ get; set; }
+        public Guid BoothId{ get; set; }
         public int PaperCount{ get; set; }
         public int PaperMax { get; set; }
         public int RibbonCount{ get; set; }

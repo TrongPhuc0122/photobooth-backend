@@ -1,25 +1,24 @@
 using Shared.QueryParameter;
 
-namespace Application.DTOs.Commons
+namespace Application.DTOs.Commons;
+public class CommonQueryParameters : BaseQueryParameters
 {
-    public class CommonQueryParameters : BaseQueryParameters
-    {
-        public Guid? CompanyId { get; set; }
+    public int? BranchId { get; set; }
         public virtual GenericQueryParameters ToGenericQueryParameters()
         {
             var genericParams = new GenericQueryParameters
             {
+                Take = Take,
                 Index = Index,
                 PageSize = PageSize,
                 SortBy = SortBy,
                 SortDirection = SortDirection,
-                Search = Search
+                Search = Search 
             };
-            if (CompanyId.HasValue)
+            if (BranchId.HasValue)
             {
-                genericParams.AddFilter("CompanyId", "==", CompanyId.Value);
+                genericParams.AddFilter("BranchId", "==", BranchId.Value);
             }
             return genericParams;
         }
-    }
 }

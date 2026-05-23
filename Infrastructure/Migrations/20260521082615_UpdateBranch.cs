@@ -5,25 +5,18 @@
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class FixBranch : Migration
+    public partial class UpdateBranch : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(
-                name: "Status",
-                table: "Branches",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Status",
-                table: "Branches");
+
         }
     }
 }

@@ -6,7 +6,8 @@ using AutoMapper;
 using Domain.Entities;
 using Shared.Results;
 using Shared;
-using System.Xml.Serialization;
+using Application.DTOs.Commons;
+using Shared.QueryParameter;
 
 namespace Application.Services
 {
@@ -31,15 +32,16 @@ namespace Application.Services
             {
                 return ServiceResult<BranchDto>.ValidationError("Sai format số điện thoại");
             }
+            Branch branch;
             try
             {
-                _repository.GetSingleByCondition(b => b.BranchCode == dto.BranchCode);
-                return ServiceResult<BranchDto>.ValidationError($"Đã tồn tại chi nhánh {dto.BranchCode}");
+                branch = _repository.GetSingleByCondition(b => b.BranchCode == dto.BranchCode);
+                return ServiceResult<BranchDto>.ValidationError($"Đã tồn tại BranchCode {dto.BranchCode}");
             }
-            catch (KeyNotFoundException) { }
-            try
-            {
-                var branch = new Branch
+            catch (KeyNotFoundException)
+            {}
+            try{
+                branch = new Branch
                 {
                     BranchName = dto.BranchName,
                     BranchCode = dto.BranchCode,
@@ -50,90 +52,149 @@ namespace Application.Services
                 };
                 _repository.Add(branch);
                 await _unitOfWork.SaveChangesAsync();
-                var result = _mapper.Map<BranchDto>(branch);
-                return ServiceResult<BranchDto>.Created(result);
-            }
-            catch(Exception ex)
-            {
-                return ServiceResult<BranchDto>.InternalServerError($"Lỗi tạo chi nhanh {ex.Message}");
-            }
-        } 
-        public override ServiceResult<IEnumerable<BranchDto>> GetAll()
-        {
-            var branch = _repository.GetAll(includes:["Booths", "Booths.BoothHealth", "Booths.Invoices"]);
-            var dto = branch.Select(branch =>
-            {
-                var totalBooths = branch.Booths.Count;
-                var activeBooths = branch.Booths.Count(b => b.BoothHealth?.Status == Status.ONLINE);
-
-                return new BranchDto
+                var result = new BranchDto
                 {
-                    BranchId = branch.BranchId,
+                    Infor = new BranchBasicInfor
+                    {
+                        Id = branch.BranchId,
+                        BranchName = branch.BranchName
+                    },
                     BranchCode = branch.BranchCode,
-                    BranchName = branch.BranchName,
                     ManagerName = branch.ManagerName,
                     Creator = branch.Creator,
                     Address = branch.Address,
                     PhoneNumber = branch.PhoneNumber,
-                    CreateAt = branch.CreatedAt,
-                    TotalBooths = totalBooths,
-                    ActiveBooths = activeBooths,
-                    Status = new StatusExtenTion().StatusToText(branch.Status),
-                    MonthlyRevenue = branch.Booths
-                        .SelectMany(b => b.Invoices)
-                        .Where(i => i.CreatedAt.Month == DateTime.Now.Month &&
-                                    i.CreatedAt.Year == DateTime.Now.Year)
-                        .Sum(i => i.Price)
+                    Status = branch.Status,
+                    TotalBooths = 0,
+                    ActiveBooths = 0,
+                    MonthlyRevenue = 0,
                 };
-            });
-            return ServiceResult<IEnumerable<BranchDto>>.Success(dto);
-        }
-        public override ServiceResult<BranchDto> GetById(int id)
+                return ServiceResult<BranchDto>.Created(result);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<BranchDto>.InternalServerError($"Lỗi tạo Branch {ex.Message}");
+            }
+        } 
+        public ServiceResult<PagedResult<BranchDto>> GetAll(BranchQueryParameters parameters)
         {
             try
             {
-                var branch = _repository.GetSingleByCondition(b => b.BranchId == id, includes: ["Booths", "Booths.BoothHealth", "Booths.Invoices"]);
-                var activeBooths = branch.Booths.Count(b => b.BoothHealth?.Status == Status.ONLINE);
-                var dto = new BranchDto
+                var genericParams = new GenericQueryParameters
                 {
+                    Take = parameters.Take,
+                    Index = parameters.Index,
+                    PageSize = parameters.PageSize,
+                    SortBy = parameters.SortBy,
+                    SortDirection = parameters.SortDirection,
+                    Search = parameters.Search
+                };
+                string[] searchProprties = {"BranchName", "BranchCode", "Address"};
+                string[] includes = {"Booths", "Booths.BoothHealth", "Booths.Invoices"};
+
+                var pagedEntities = _repository.GetPaged(genericParams, searchProprties, includes);
+                var now = DateTime.UtcNow;
+                var result = pagedEntities.Items.Select(b => new BranchDto
+                {
+                    Infor =
+                    {
+                        Id = b.BranchId,
+                        BranchName = b.BranchName
+                    },
+                    BranchCode = b.BranchCode,
+                    ManagerName = b.ManagerName,
+                    Creator = b.Creator,
+                    Address = b.Address,
+                    PhoneNumber = b.PhoneNumber,
+                    Status = b.Status,
+                    CreateAt = b.CreatedAt,
+                    TotalBooths = b.Booths.Count(),
+                    ActiveBooths = b.Booths.Count(b => b.BoothHealth != null &&
+                                                    b.BoothHealth.Status == Status.ONLINE),
+                    MonthlyRevenue = b.Booths?
+                            .SelectMany(b => b.Invoices ?? Enumerable.Empty<Invoice>())
+                            .Where(i => i.CreatedAt.Month == now.Month && 
+                                        i.CreatedAt.Year == now.Year && 
+                                        i.FlowStatus == true)
+                            .Sum(i => i.FinalPrice) ?? 0
+                }).ToList();
+                var pagedResult = new PagedResult<BranchDto>(
+                    result,
+                    pagedEntities.TotalCount,
+                    pagedEntities.Index,
+                    pagedEntities.PageSize
+                );
+                return ServiceResult<PagedResult<BranchDto>>.Success(pagedResult);
+            }
+            catch(Exception ex)
+            {
+                return ServiceResult<PagedResult<BranchDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
+            }
+
+        }
+        public override ServiceResult<BranchDto> GetById(int id)
+        {
+            Branch branch;
+            try
+            {
+                branch = _repository.GetSingleById(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult<BranchDto>.NotFound($"Không tìm thấy BranchId = {id}");
+            }
+            try
+            {
+                var result = new BranchDto
+                {
+                    Infor =
+                    {
+                        Id = branch.BranchId,
+                        BranchName = branch.BranchName
+                    },
                     BranchCode = branch.BranchCode,
-                    BranchName = branch.BranchName,
                     ManagerName = branch.ManagerName,
                     Creator = branch.Creator,
                     Address = branch.Address,
                     PhoneNumber = branch.PhoneNumber,
                     CreateAt = branch.CreatedAt,
-                    TotalBooths = branch.Booths.Count,
-                    ActiveBooths = activeBooths,
-                    Status = new StatusExtenTion().StatusToText(branch.Status),
+                    TotalBooths = branch.Booths.Count(),
+                    ActiveBooths = branch.Booths.Count(b => b.BoothHealth != null &&
+                                                            b.BoothHealth.Status == Status.ONLINE),
+                    Status = branch.Status,
                     MonthlyRevenue = branch.Booths
                         .SelectMany(b => b.Invoices)
                         .Where(i => i.CreatedAt.Month == DateTime.Now.Month
                                 && i.CreatedAt.Year == DateTime.Now.Year)
                         .Sum(i => i.Price)
                 };
-                return ServiceResult<BranchDto>.Success(dto); 
+                return ServiceResult<BranchDto>.Success(result);
             }
-            catch (KeyNotFoundException)
+            catch(Exception ex)
             {
-                return ServiceResult<BranchDto>.NotFound($"Không có chi nhánh có id = {id}");
+                return ServiceResult<BranchDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
         }
         public override async Task<ServiceResult> Delete(int id)
         {
-            var branch = _repository.GetSingleById(id);
-            if(branch == null)
+            Branch branch;
+            try
             {
-                return ServiceResult.NotFound($"Branch {id} not found");
+                branch  = _repository.GetSingleById(id);
             }
-            bool activeBooths = _boothRepository
-                .GetAll(includes: ["BoothHealth"])
-                .Any(b => b.BranchId == id && b.BoothHealth?.Status == Status.ONLINE);
-            if (activeBooths)
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult.NotFound($"Không tồn tại branch id = {id}");
+            }
+            bool isActive = _boothRepository.CheckContains(b => b.BranchId == id && b.BoothHealth != null && b.BoothHealth.Status == Status.ONLINE);
+            if (isActive)
             {
                 return ServiceResult.ValidationError("Không thể xóa chi nhánh đang có booth hoạt động");
             }
-            return await base.Delete(id);
+            branch.IsDeleted = true;
+            _repository.Update(branch);
+            await _unitOfWork.SaveChangesAsync();
+            return ServiceResult.Success();
         }
         // VALIDATION
         private ServiceResult ValidateBranchName(string name)

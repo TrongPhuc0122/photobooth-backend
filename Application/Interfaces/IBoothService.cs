@@ -1,17 +1,20 @@
 using Application.DTOs.Identites.Booths;
 using Application.Interfaces.Commons;
+using Application.DTOs.Commons;
 using Domain.Entities;
 using Shared.Results;
 
 namespace Application.Interfaces
 {
-    public interface IBoothService : IGenericService<Booths, BoothDto, CreateBoothDto, int>
+    public interface IBoothService : IGenericService<Booths, BoothDto, CreateBoothDto, Guid>
     {
-        Task<ServiceResult> CreateError(int boothId, CreateBoothErrorDto dto);
-        ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(int boothId);
-        ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(int boothId);
-        Task<ServiceResult> FixError(int boothId, string errorCode);
-        Task<ServiceResult> UpdateResources (int boothId, int? paper, int? ribbon);
-        Task<ServiceResult> SetBoothStorage (int boothId, int? paperMax, int? ribbonMax);
+        ServiceResult<PagedResult<BoothDto>> GetAll(CommonQueryParameters parameters);
+        Task<ServiceResult> CreateError(Guid boothId, CreateBoothErrorDto dto);
+        ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(Guid boothId);
+        ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(Guid boothId);
+        Task<ServiceResult> FixError(Guid boothId, string errorCode);
+        Task<ServiceResult> UpdateResources (Guid boothId, int? paper, int? ribbon);
+        Task<ServiceResult> SetBoothStorage (Guid boothId, int? paperMax, int? ribbonMax);
+        Task<ServiceResult> GetHeartBeat (Guid boothId);
     }
 }

@@ -1,23 +1,25 @@
-using System.Reflection.Metadata.Ecma335;
-using Application.DTOs.Identites.Booths;
 using Application.Interfaces;
+using Application.DTOs.Identites.Booths;
 using Application.Interfaces.Commons;
 using Application.Services.Commons;
 using AutoMapper;
 using Domain.Entities;
 using Shared.Results;
 using Shared;
+using Shared.QueryParameter;
+using Application.DTOs.Commons;
+using System.ComponentModel;
 
 namespace Application.Services
 {
-    public class BoothService : GenericService<Booths, BoothDto, CreateBoothDto, int>, IBoothService
+    public class BoothService : GenericService<Booths, BoothDto, CreateBoothDto, Guid>, IBoothService
     {
         private readonly IGenericRepository<BoothError, int> _errorRepository;
         private readonly IGenericRepository<BoothHealth, int> _healthRepository;
         private readonly IGenericRepository<BoothResources, int> _resourceRepository;
         private readonly IGenericRepository<Branch, int> _branchRepository;
         public BoothService(
-            IGenericRepository<Booths, int> BoothRepository,
+            IGenericRepository<Booths, Guid> BoothRepository,
             IGenericRepository<BoothError, int> errorRepository,
             IGenericRepository<BoothHealth, int> healthRepository,
             IGenericRepository<BoothResources, int> resourcesRepository,
@@ -92,15 +94,18 @@ namespace Application.Services
                 }
                 var result = new BoothDto
                 {
-                    BoothId = booth.BoothId,
+                    Infor =
+                    {
+                        BoothId = booth.BoothId,
+                        BoothName = booth.BoothName
+                    },
                     BranchName = branch.BranchName,
-                    BoothName = booth.BoothName,
                     BoothIp = booth.BoothIp,
                     Brand = booth.Brand,
-                    Status = new StatusExtenTion().StatusToText(booth.BoothHealth.Status),
-                    PaperCount = 0,
+                    Status = booth.BoothHealth.Status,
+                    PaperCount = booth.BoothResources.PaperCount,
                     PaperMax = booth.BoothResources.PaperMax,
-                    RibbonCount = 0,
+                    RibbonCount = booth.BoothResources.RibbonCount,
                     RibbonMax = booth.BoothResources.RibbonMax,
                     MonthlyRevenue = 0
                 };
@@ -111,50 +116,73 @@ namespace Application.Services
                 return ServiceResult<BoothDto>.InternalServerError($"Lỗi tạo booth: {ex.Message}");
             }
         }
-        public override ServiceResult<IEnumerable<BoothDto>> GetAll()
-        {
-            var booths = _repository.GetAll(includes: ["Branch", "BoothHealth", "BoothResources", "BoothErrors", "Invoices"]);
-            var dto = booths.Select(booth =>
-            {
-                var hasError = booth.BoothErrors.Any(e => !e.IsFixed);
-                return new BoothDto
-                {
-                    BoothId = booth.BoothId,
-                    BranchName = booth.Branch?.BranchName ?? string.Empty,
-                    BoothName = booth.BoothName,
-                    BoothIp = booth.BoothIp,
-                    Brand = booth.Brand,
-                    Status = new StatusExtenTion().StatusToText(booth.BoothHealth?.Status ?? 0),
-                    PaperCount = booth.BoothResources?.PaperCount ?? 0,
-                    PaperMax = booth.BoothResources?.PaperMax ?? 0,
-                    RibbonCount = booth.BoothResources?.RibbonCount ?? 0,
-                    RibbonMax = booth.BoothResources?.RibbonMax ?? 0,
-                    MonthlyRevenue = booth.Invoices
-                        .Where(i => i.CreatedAt.Month == DateTime.Now.Month &&
-                                    i.CreatedAt.Year == DateTime.Now.Year)
-                        .Sum(i => i.Price)
-                };
-            }
-            );
-            return ServiceResult<IEnumerable<BoothDto>>.Success(dto);
-        }
-        public override ServiceResult<BoothDto> GetById(int id)
+        public ServiceResult<PagedResult<BoothDto>> GetAll(CommonQueryParameters parameters)
         {
             try
             {
-                var booth = _repository.GetSingleByCondition(b => b.BoothId == id, includes: ["Branch", "BoothHealth", "BoothResources", "Invoices"]);
-                if(booth.BoothHealth == null)
+                var genericParams = parameters.ToGenericQueryParameters();
+                string[] searchProperties = { "BoothName", "BoothIp", "Brand" };
+                string[] includes = {"Branch", "BoothHealth", "BoothResources", "BoothErrors", "Invoices"};
+
+                var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
+                var now = DateTime.UtcNow;
+                var result = pagedEntities.Items.Select(b => new BoothDto
                 {
-                    return ServiceResult<BoothDto>.ValidationError($"Không tìm thấy BoothHealth của booth có id = {id}");
-                }
+                    Infor =
+                    {
+                        BoothId = b.BoothId,
+                        BoothName = b.BoothName
+                    },
+                    BranchName = b.Branch.BranchName,
+                    BoothIp = b.BoothIp,
+                    Brand = b.Brand,
+                    Status = b.BoothHealth!.Status,
+                    PaperCount = b.BoothResources!.PaperCount,
+                    PaperMax = b.BoothResources!.PaperMax,
+                    RibbonCount = b.BoothResources!.RibbonCount,
+                    RibbonMax = b.BoothResources!.RibbonMax,
+                    MonthlyRevenue = b.Invoices
+                        .Where(i => i.CreatedAt.Month == DateTime.Now.Month &&
+                                i.CreatedAt.Year == DateTime.Now.Year)
+                        .Sum(i => i.Price)
+                });
+                var pagedResult = new PagedResult<BoothDto>(
+                    result,
+                    pagedEntities.TotalCount,
+                    pagedEntities.Index,
+                    pagedEntities.PageSize
+                );
+                return ServiceResult<PagedResult<BoothDto>>.Success(pagedResult);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<PagedResult<BoothDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
+            }
+        }
+        public override ServiceResult<BoothDto> GetById(Guid id)
+        {
+            Booths booth;
+            try
+            {
+                    booth = _repository.GetSingleById(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult<BoothDto>.NotFound($"Không tồn tại BoothId = {id}");
+            }
+            try
+            {   
                 var dto = new BoothDto
                 {
+                    Infor =
+                    {
+                        BoothId = booth.BoothId,
+                        BoothName = booth.BoothName
+                    },
                     BranchName = booth.Branch?.BranchName ?? string.Empty,
-                    BoothName = booth.BoothName,
                     BoothIp = booth.BoothIp,
-                    BoothId = booth.BoothId,
                     Brand = booth.Brand,
-                    Status = new StatusExtenTion().StatusToText(booth.BoothHealth.Status),
+                    Status = booth.BoothHealth!.Status,
                     PaperCount = booth.BoothResources?.PaperCount ?? 0,
                     PaperMax = booth.BoothResources?.PaperMax ?? 0,
                     RibbonCount = booth.BoothResources?.RibbonCount ?? 0,
@@ -166,16 +194,16 @@ namespace Application.Services
                 };
                 return ServiceResult<BoothDto>.Success(dto);
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return ServiceResult<BoothDto>.NotFound($"Không có booth id = {id}");
+                return ServiceResult<BoothDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
         }
         #endregion
         
         #region BoothError
 
-        public async Task<ServiceResult> CreateError(int boothId, CreateBoothErrorDto dto)
+        public async Task<ServiceResult> CreateError(Guid boothId, CreateBoothErrorDto dto)
         {
             var booth = _repository.GetSingleById(boothId);
             if(booth == null)
@@ -212,7 +240,7 @@ namespace Application.Services
             }
         }
         
-        public ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(int boothId)
+        public ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(Guid boothId)
         {
             var errors = _errorRepository.GetMulti(e => e.Booths != null && e.Booths.BoothId == boothId && !e.IsFixed, includes: ["Booths"]);
             var dto = errors.Select(e => new BoothErrorDto
@@ -226,7 +254,7 @@ namespace Application.Services
             });
             return ServiceResult<IEnumerable<BoothErrorDto>>.Success(dto);
         }
-        public ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(int boothId)
+        public ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(Guid boothId)
         {
             var errors = _errorRepository.GetMulti(e => e.Booths != null && e.Booths.BoothId == boothId, includes: ["Booths"]);
             var dto = errors.Select(e => new BoothErrorDto
@@ -240,7 +268,7 @@ namespace Application.Services
             });
             return ServiceResult<IEnumerable<BoothErrorDto>>.Success(dto);
         }
-        public async Task<ServiceResult> FixError(int boothId, string cause)
+        public async Task<ServiceResult> FixError(Guid boothId, string cause)
         {
             if (!_repository.CheckContains(b => b.BoothId == boothId))
                 return ServiceResult.NotFound($"Không tìm thấy booth {boothId}");
@@ -267,8 +295,9 @@ namespace Application.Services
             }
         }
         #endregion
+        
         #region BoothResources
-        public async Task<ServiceResult> UpdateResources(int boothId, int? paper, int? ribbon)
+        public async Task<ServiceResult> UpdateResources(Guid boothId, int? paper, int? ribbon)
         {
             if (!_repository.CheckContains(b => b.BoothId == boothId))
                 return ServiceResult.NotFound($"Không tìm thấy booth có id = {boothId}");
@@ -291,7 +320,7 @@ namespace Application.Services
                 return ServiceResult.NotFound($"Không tìm thấy tài nguyên trong booth id = {boothId}");
             }
         }
-        public async Task<ServiceResult> SetBoothStorage (int boothId, int? paperMax, int? ribbonMax)
+        public async Task<ServiceResult> SetBoothStorage (Guid boothId, int? paperMax, int? ribbonMax)
         {
             if (!_repository.CheckContains(b => b.BoothId == boothId))
                 return ServiceResult.NotFound($"Không tìm thấy booth có id = {boothId}");
@@ -312,6 +341,40 @@ namespace Application.Services
             {
                 return ServiceResult.NotFound($"Không tìm thấy tài nguyên trong booth id = {boothId}");
             }
+        }
+        #endregion
+        
+        #region BoothHealth
+        public async Task<ServiceResult> GetHeartBeat (Guid boothId)
+        {
+            try
+            {
+                Booths booth = _repository.GetSingleById(boothId);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult.NotFound($"Không tồn tại booth id = {boothId}");
+            }
+            BoothHealth health;
+            try
+            {
+                health = _healthRepository.GetSingleByCondition(h => h.BoothId == boothId);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult.NotFound($"Không tồn tại BoothHealth cho booth id = {boothId}");
+            }
+            health.LastHeartbeat = DateTime.UtcNow;
+            if(DateTime.UtcNow - health.LastHeartbeat > TimeSpan.FromSeconds(70))
+            {
+                health.Status = Status.OFFLINE;
+            }
+            else
+            {
+                health.Status = Status.ONLINE;
+            }
+            var result = await _unitOfWork.SaveChangesAsync();
+            return ServiceResult.Success();
         }
         #endregion
         // VALIDATION

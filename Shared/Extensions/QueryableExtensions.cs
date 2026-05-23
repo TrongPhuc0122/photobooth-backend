@@ -2,6 +2,7 @@
 using Shared.Results;
 using System.Linq.Expressions;
 
+
 namespace Shared.Extensions
 {
     public static class QueryableExtensions
@@ -113,21 +114,23 @@ namespace Shared.Extensions
             return query.Provider.CreateQuery<T>(resultExpression);
         }
 
-        public static PagedResult<T> ToPagedResult<T>(this IQueryable<T> query, int page, int pageSize)
+        public static PagedResult<T> ToPagedResult<T>(this IQueryable<T> query, GenericQueryParameters parameters)
         {
+            var take = parameters.Take ?? parameters.PageSize; 
+
             var totalCount = query.Count();
             var items = query
-                .Skip(page * pageSize)
-                .Take(pageSize)
+                .Skip(parameters.Index * take)
+                .Take(take)
                 .ToList();
 
             return new PagedResult<T>
             {
                 Items = items,
                 TotalCount = totalCount,
-                Index = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+                Index = parameters.Index,
+                PageSize = take,
+                TotalPages = (int)Math.Ceiling((double)totalCount / take)
             };
         }
 

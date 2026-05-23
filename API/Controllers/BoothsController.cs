@@ -1,7 +1,7 @@
+using Application.DTOs.Commons;
 using Application.DTOs.Identites.Booths;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Results;
 
 namespace API.Controllers
 {
@@ -15,16 +15,16 @@ namespace API.Controllers
         {
             _boothsService = boothsService;
         }
-
+        #region Booths
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetAll([FromQuery] CommonQueryParameters parameters)
         {
-            var result = _boothsService.GetAll();
+            var result = _boothsService.GetAll(parameters);
             return ToActionResult(result);
         }
 
-        [HttpGet("{boothId:int}")]
-        public IActionResult GetById([FromRoute] int boothId)
+        [HttpGet("{boothId:Guid}")]
+        public IActionResult GetById([FromRoute] Guid boothId)
         {
             var result = _boothsService.GetById(boothId);
             return ToActionResult(result);
@@ -37,29 +37,31 @@ namespace API.Controllers
             return ToActionResult(result);
         }
 
-        [HttpPut("{boothId:int}")]
-        public async Task<IActionResult> Update([FromRoute] int boothId, [FromBody] CreateBoothDto model)
+        [HttpPut("{boothId:Guid}")]
+        public async Task<IActionResult> Update([FromRoute] Guid boothId, [FromBody] CreateBoothDto model)
         {
             var result = await _boothsService.UpdateAsync(boothId, model);
             return ToActionResult(result);
         }
 
-        [HttpDelete("{boothId:int}")]
-        public async Task<IActionResult> Delete([FromRoute] int boothId)
+        [HttpDelete("{boothId:Guid}")]
+        public async Task<IActionResult> Delete([FromRoute] Guid boothId)
         {
             var result = await _boothsService.Delete(boothId);
             return ToActionResult(result);
         }
-        // ===== BoothError =====
-        [HttpPost("{boothId:int}/error")]
-        public async Task<IActionResult> CreateError(int boothId, [FromBody] CreateBoothErrorDto dto)
+        #endregion
+
+        #region  BoothError
+        [HttpPost("{boothId:Guid}/error")]
+        public async Task<IActionResult> CreateError(Guid boothId, [FromBody] CreateBoothErrorDto dto)
         {
             var result = await _boothsService.CreateError(boothId, dto);
             return ToActionResult(result);
         }
 
-        [HttpGet("{boothId:int}/errors")]
-        public IActionResult GetErrors([FromRoute] int boothId, [FromQuery] bool activeOnly = false)
+        [HttpGet("{boothId:Guid}/errors")]
+        public IActionResult GetErrors([FromRoute] Guid boothId, [FromQuery] bool activeOnly = false)
         {
             if (activeOnly)
             {
@@ -74,25 +76,36 @@ namespace API.Controllers
         }
 
         [HttpPut("error/fix")]
-        public async Task<IActionResult> FixError([FromQuery] int boothId, [FromQuery] string cause)
+        public async Task<IActionResult> FixError([FromQuery] Guid boothId, [FromQuery] string cause)
         {
             var result = await _boothsService.FixError(boothId, cause);
             return ToActionResult(result);
         }
+        #endregion
 
-        // ===== BoothResources =====
-        [HttpPut("{boothId:int}/resources")]
-        public async Task<IActionResult> UpdateResources(int boothId, [FromQuery] int? paper, [FromQuery] int? ribbon)
+        #region  BoothsResources
+        [HttpPut("{boothId:Guid}/resources")]
+        public async Task<IActionResult> UpdateResources(Guid boothId, [FromQuery] int? paper, [FromQuery] int? ribbon)
         {
             var result = await _boothsService.UpdateResources(boothId, paper, ribbon);
             return ToActionResult(result);
         }
 
-        [HttpPut("{boothId:int}/resources/storage")]
-        public async Task<IActionResult> SetBoothStorage(int boothId, [FromQuery] int? paperMax, [FromQuery] int? ribbonMax)
+        [HttpPut("{boothId:GUid}/resources/storage")]
+        public async Task<IActionResult> SetBoothStorage(Guid boothId, [FromQuery] int? paperMax, [FromQuery] int? ribbonMax)
         {
             var result = await _boothsService.SetBoothStorage(boothId, paperMax, ribbonMax);
             return ToActionResult(result);
         }
+        #endregion
+
+        #region BoothHealth
+        [HttpPost("{boothId:Guid}/heartbeat")]
+        public async Task<IActionResult> GetHeartBeat (Guid boothId)
+        {
+            var result = await _boothsService.GetHeartBeat(boothId);
+            return ToActionResult(result);
+        }
+        #endregion
     }
 }

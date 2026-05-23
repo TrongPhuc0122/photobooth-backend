@@ -1,3 +1,4 @@
+using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -14,28 +15,30 @@ namespace API.Controllers
         {
             _invoiceService = invoiceService;
         }
-
-        [HttpPost("{boothId}")]
-        public async Task<IActionResult> Create(int boothId, [FromBody] CreateInvoicesDto dto)
+        [HttpGet]
+        public IActionResult GetAll([FromQuery] InvoiceQueryParameters parameters, bool detail=false)
         {
-            var result = await _invoiceService.CreateAsync(boothId, dto);
+            if (!detail)
+            {
+                var result = _invoiceService.GetAll(parameters);
+                return ToActionResult(result);
+            }
+            else
+            {
+                var result = _invoiceService.GetDetailAll(parameters);
+                return ToActionResult(result);
+            }  
+        }
+        [HttpGet("{invoiceId:int}")]
+        public IActionResult GetDetailById(int invoiceId)
+        {
+            var result = _invoiceService.GetDetailById(invoiceId);
             return ToActionResult(result);
         }
-
-        [HttpGet]
-        public IActionResult GetByAdmin(
-            [FromQuery] string? branchCode,
-            [FromQuery] string? boothName,
-            [FromQuery] string from,
-            [FromQuery] string to)
+        [HttpPost("{boothId:Guid}")]
+        public async Task<IActionResult> Create(Guid boothId, [FromBody] CreateInvoicesDto dto)
         {
-            if (!DateTime.TryParseExact(from, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var fromDate) ||
-                !DateTime.TryParseExact(to, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var toDate))
-            {
-                return BadRequest("Định dạng ngày không hợp lệ. Vui lòng nhập dd/MM/yyyy");
-            }
-
-            var result = _invoiceService.GetByAdmin(branchCode, boothName, fromDate, toDate);
+            var result = await _invoiceService.CreateAsync(boothId, dto);
             return ToActionResult(result);
         }
     }

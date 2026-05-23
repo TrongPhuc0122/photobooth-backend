@@ -83,7 +83,7 @@ namespace Infrastructure.Context.Repositories
             return _dbSet.Where(where).ToList();
         }
 
-        public virtual TEntity GetSingleByCondition(Expression<Func<TEntity, bool>> expression, string[] includes = null)
+        public virtual TEntity GetSingleByCondition(Expression<Func<TEntity, bool>> expression, string[]? includes = null)
         {
             IQueryable<TEntity> query = _dbSet;
 
@@ -99,7 +99,7 @@ namespace Infrastructure.Context.Repositories
             return entity;
         }
 
-        public virtual IEnumerable<TEntity> GetAll(string[] includes = null)
+        public virtual IEnumerable<TEntity> GetAll(string[]? includes = null)
         {
             IQueryable<TEntity> query = _dbSet;
 
@@ -112,7 +112,7 @@ namespace Infrastructure.Context.Repositories
             return query;
         }
 
-        public virtual IEnumerable<TEntity> GetMulti(Expression<Func<TEntity, bool>>? predicate, string[] includes = null)
+        public virtual IEnumerable<TEntity> GetMulti(Expression<Func<TEntity, bool>>? predicate, string[]? includes = null)
         {
             IQueryable<TEntity> query = _dbSet;
 
@@ -129,7 +129,7 @@ namespace Infrastructure.Context.Repositories
         }
 
         // Kept from sample: no-tracking variant (not part of IGenericRepository today)
-        public virtual IEnumerable<TEntity> GetMultiNoTracking(Expression<Func<TEntity, bool>>? predicate, string[] includes = null)
+        public virtual IEnumerable<TEntity> GetMultiNoTracking(Expression<Func<TEntity, bool>>? predicate, string[]? includes = null)
         {
             IQueryable<TEntity> query = _dbSet.AsNoTracking();
 
@@ -150,7 +150,7 @@ namespace Infrastructure.Context.Repositories
             out int total,
             int index = 0,
             int size = 50,
-            string[] includes = null)
+            string[]? includes = null)
         {
             IQueryable<TEntity> query = _dbSet;
 
@@ -222,7 +222,7 @@ namespace Infrastructure.Context.Repositories
 
             query = query.ApplySorting(parameters.SortBy, parameters.SortDirection);
 
-            return query.ToPagedResult(parameters.Index, parameters.PageSize);
+            return query.ToPagedResult(parameters);
         }
 
         public virtual int Count(Expression<Func<TEntity, bool>> where)

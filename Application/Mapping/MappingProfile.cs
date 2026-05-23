@@ -20,6 +20,10 @@ namespace Application.Mappings
             //Invoice 
             CreateMap<Invoice, InvoiceDto>();
             CreateMap<CreateInvoicesDto, Invoice>();
+
+            // Voucher
+            CreateMap<Voucher, VoucherDto>();
+            CreateMap<CreateVoucherDto, Voucher>();
         }
     }
 }

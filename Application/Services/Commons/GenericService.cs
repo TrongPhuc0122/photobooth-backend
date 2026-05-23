@@ -125,7 +125,7 @@ namespace Application.Services.Commons
             }
         }
 
-        public virtual ServiceResult<PagedResult<TDto>> GetPaged(CommonQueryParameters parameters, string[]? searchProperties, string[]? includes = null)
+        /*public virtual ServiceResult<PagedResult<TDto>> GetPaged(CommonQueryParameters parameters, string[]? searchProperties, string[]? includes = null)
         {
             var pagedResult = _repository.GetPaged(parameters.ToGenericQueryParameters(), searchProperties, includes);
             if (pagedResult == null)
@@ -141,7 +141,7 @@ namespace Application.Services.Commons
                 TotalPages = pagedResult.TotalPages
             };
             return ServiceResult<PagedResult<TDto>>.Success(result);
-        }
+        }*/
 
 
         public virtual ServiceResult<PagedResult<TDto>> GetPaged(GenericQueryParameters parameters, string[]? searchProperties, string[]? includes = null)

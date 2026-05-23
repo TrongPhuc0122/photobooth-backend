@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260511102929_FixError_2")]
-    partial class FixError_2
+    [Migration("20260518023329_FixDataType")]
+    partial class FixDataType
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,8 +33,8 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ErrorId"));
 
-                    b.Property<int>("BoothId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Cause")
                         .IsRequired()
@@ -65,8 +65,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.BoothHealth", b =>
                 {
-                    b.Property<int>("BoothId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("LastHeartbeat")
                         .HasColumnType("datetime2");
@@ -81,8 +81,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.BoothResources", b =>
                 {
-                    b.Property<int>("BoothId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
@@ -106,11 +106,9 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Booths", b =>
                 {
-                    b.Property<int>("BoothId")
+                    b.Property<Guid>("BoothId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BoothId"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("BoothIp")
                         .IsRequired()
@@ -132,6 +130,12 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Creator")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.HasKey("BoothId");
 
@@ -167,6 +171,12 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ManagerName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -191,8 +201,8 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceId"));
 
-                    b.Property<int>("BoothId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -226,6 +236,33 @@ namespace Infrastructure.Migrations
                     b.ToTable("Invoices");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Payment", b =>
+                {
+                    b.Property<int>("PaymentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TransactionRef")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PaymentId");
+
+                    b.ToTable("Payments");
+                });
+
             modelBuilder.Entity("Domain.Entities.Photo", b =>
                 {
                     b.Property<int>("PhotoId")
@@ -234,8 +271,8 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PhotoId"));
 
-                    b.Property<int>("BoothId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -265,11 +302,21 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Creator")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<float>("DiscountPercent")
                         .HasColumnType("real");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Purpose")
                         .IsRequired()

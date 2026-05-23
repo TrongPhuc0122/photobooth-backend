@@ -8,7 +8,7 @@ namespace Infrastructure.Context
     {
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Voucher> Vouchers { get; set; }
-
+        public DbSet<Payment> Payments { get; set; }
         public DbSet<BoothResources> BoothResources { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<Photo> Photos { get; set; }

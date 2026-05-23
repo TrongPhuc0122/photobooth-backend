@@ -30,6 +30,10 @@ remove-db:
 check-dirty:
 	git diff --quiet || (echo "⚠️ You have unsaved/unstaged changes!" && exit 1)
 
+update-API-db:
+	dotnet ef migrations add $(name) --project Infrastructure --startup-project API --verbose
+	dotnet ef database update --project Infrastructure --startup-project API --verbose
+	dotnet run --project API --configuration Debug
 safe-run:
 	dotnet clean
 	dotnet build || exit 1

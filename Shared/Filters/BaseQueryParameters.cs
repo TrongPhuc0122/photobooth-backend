@@ -6,6 +6,7 @@ namespace Shared.QueryParameter
     {
         private string _search;
         [Range(0, int.MaxValue, ErrorMessage = "Page must be greater than 0")]
+        public int? Take { get; set; }
         public int Index { get; set; } = 0;
 
         public int PageSize { get; set; } = 10;

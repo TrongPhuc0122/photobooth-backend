@@ -15,5 +15,9 @@
             });
             return this;
         }
+        public void RemoveFilter(string field)
+        {
+            Filters?.RemoveAll(f => f.Field == field);
+        }
     }
 }

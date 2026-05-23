@@ -2,10 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Net;
 using Shared;
+using Domain.Entities.Commons;
 
 namespace Domain.Entities
 {
-    public class Branch
+    public class Branch : BaseEntity
     {
         [Key]
         public int BranchId { get; set; }
