@@ -164,7 +164,11 @@ namespace Application.Services
             Booths booth;
             try
             {
-                    booth = _repository.GetSingleById(id);
+                string[] includes = { "Branch", "BoothHealth", "BoothResources", "Invoices" };
+                booth = _repository.GetSingleByCondition(
+                    b => b.BoothId == id, 
+                    includes
+                );
             }
             catch (KeyNotFoundException)
             {
@@ -228,7 +232,7 @@ namespace Application.Services
                     ErrorCode = error.ErrorCode,
                     Cause = error.Cause,
                     Solution = error.Solution,
-                    IsFixed = error.IsFixed ? "Đã xử lý" : "Chưa xử lý",
+                    IsFixed = error.IsFixed,
                     CreateAt = error.CreatedAt
                 };
 
@@ -249,7 +253,7 @@ namespace Application.Services
                 Cause = e.Cause,
                 Solution = e.Solution,
                 ResolvedBy = e.ResolvedBy,
-                IsFixed = e.IsFixed ? "Đã xử lý" : "Chưa xử lý",
+                IsFixed = e.IsFixed,
                 CreateAt = e.CreatedAt
             });
             return ServiceResult<IEnumerable<BoothErrorDto>>.Success(dto);
@@ -263,7 +267,7 @@ namespace Application.Services
                 Cause = e.Cause,
                 Solution = e.Solution,
                 ResolvedBy = e.ResolvedBy,
-                IsFixed = e.IsFixed ? "Đã xử lý" : "Chưa xử lý",
+                IsFixed = e.IsFixed,
                 CreateAt = e.CreatedAt
             });
             return ServiceResult<IEnumerable<BoothErrorDto>>.Success(dto);
@@ -347,33 +351,52 @@ namespace Application.Services
         #region BoothHealth
         public async Task<ServiceResult> GetHeartBeat (Guid boothId)
         {
+            Booths booths;
             try
             {
-                Booths booth = _repository.GetSingleById(boothId);
+                string[] includes = { "Branch", "BoothHealth", "BoothResources", "Invoices" };
+                booths = _repository.GetSingleByCondition(
+                    b => b.BoothId == boothId, 
+                    includes
+                );
             }
             catch (KeyNotFoundException)
             {
-                return ServiceResult.NotFound($"Không tồn tại booth id = {boothId}");
+                return ServiceResult.NotFound($"Khồng tồn tại Booth có id = {boothId}");
             }
-            BoothHealth health;
             try
             {
-                health = _healthRepository.GetSingleByCondition(h => h.BoothId == boothId);
-            }
-            catch (KeyNotFoundException)
-            {
-                return ServiceResult.NotFound($"Không tồn tại BoothHealth cho booth id = {boothId}");
-            }
-            health.LastHeartbeat = DateTime.UtcNow;
-            if(DateTime.UtcNow - health.LastHeartbeat > TimeSpan.FromSeconds(70))
-            {
-                health.Status = Status.OFFLINE;
-            }
-            else
-            {
+                var health = booths.BoothHealth;
+                if(health == null) return ServiceResult.InternalServerError($"Không tồn tại BoothHealth cho Booth có id = {boothId}");
+
+                health.LastHeartbeat = DateTime.UtcNow;
                 health.Status = Status.ONLINE;
+                _healthRepository.Update(health);
+                await _unitOfWork.SaveChangesAsync();
+                return ServiceResult.Success();
             }
-            var result = await _unitOfWork.SaveChangesAsync();
+            catch(Exception ex)
+            {
+                return ServiceResult.InternalServerError($"Lỗi truy vấn: {ex.Message}");
+            }
+        }
+        public async Task<ServiceResult> SetStatus()
+        {
+            var booths = _repository.GetMulti(b => b.BoothErrors.Any(e => e.IsFixed == false), includes: ["BoothErrors", "BoothHealth"]);
+            foreach(var health in booths)
+            {
+                if(health.BoothHealth == null) return ServiceResult.InternalServerError($"Không tìm thấy BoothHealth cho BoothId = {health.BoothId}");
+                health.BoothHealth.Status = Status.ERROR;
+                _healthRepository.Update(health.BoothHealth);
+            }
+            var offlineBooths = _repository.GetMulti(b => !b.BoothErrors.Any(e => e.IsFixed == false), includes: ["BoothHealth"]);
+            foreach(var health in offlineBooths)
+            {
+                if(health.BoothHealth == null) return ServiceResult.InternalServerError($"Không tìm thấy BoothHealth cho BoothId = {health.BoothId}");
+                if(health.BoothHealth.Status != Status.ONLINE) health.BoothHealth.Status = Status.OFFLINE;
+                _healthRepository.Update(health.BoothHealth);
+            }
+            await _unitOfWork.SaveChangesAsync();
             return ServiceResult.Success();
         }
         #endregion

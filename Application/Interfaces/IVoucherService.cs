@@ -10,5 +10,6 @@ namespace Application.Interfaces
     {
         ServiceResult<PagedResult<VoucherDto>> GetAll(VoucherQueryParameters parameters);
         ServiceResult<IEnumerable<VoucherDto>> GetActiveVoucher();
+        ServiceResult<VoucherDto> GetVoucherCode(string voucherCode);
     }
 }

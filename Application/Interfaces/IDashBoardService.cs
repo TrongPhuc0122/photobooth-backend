@@ -1,0 +1,10 @@
+using Application.DTOs.Identites;
+using Application.DTOs.Identites.Booths;
+using Shared.Results;
+
+namespace Application.Interfaces;   
+
+public interface IDashBoardService
+{
+    Task<ServiceResult<DashBoradDto>> GetDashboard(DateTime from, DateTime to);
+}

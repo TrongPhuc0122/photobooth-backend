@@ -2,6 +2,7 @@ using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ActionConstraints;
 
 namespace API.Controllers
 {
@@ -25,6 +26,12 @@ namespace API.Controllers
         public IActionResult GetById([FromRoute] int voucherId)
         {
             var result = _voucherService.GetById(voucherId);
+            return ToActionResult(result);
+        }
+        [HttpGet("{voucherCode}")]
+        public IActionResult GetVoucherCode([FromRoute] string voucherCode)
+        {
+            var result = _voucherService.GetVoucherCode(voucherCode);
             return ToActionResult(result);
         }
         [HttpPost]

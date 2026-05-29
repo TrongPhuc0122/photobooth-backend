@@ -31,6 +31,7 @@ namespace Infrastructure
             services.AddScoped<IBoothService, BoothService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IVoucherService, VoucherService>();
+            services.AddScoped<IDashBoardService, DashBoradService>();
             
             return services;
         }

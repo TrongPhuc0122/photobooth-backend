@@ -154,6 +154,57 @@ namespace Application.Services
             });
             return ServiceResult<IEnumerable<VoucherDto>>.Success(dto);
         }
+        public override ServiceResult<VoucherDto> GetById(int VoucherId)
+        {
+            Voucher voucher;
+            try
+            {
+                voucher = _repository.GetSingleById(VoucherId);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult<VoucherDto>.NotFound($"Khồng tồn tại voucher có Id = {VoucherId}");
+            }
+            var dto = new VoucherDto
+            {
+                Infor = new VoucherBasicInfor
+                {
+                    VoucherId = voucher.VoucherId,
+                    VoucherCode = voucher.VoucherCode,
+                    DiscountPercent = voucher.DiscountPercent * 100.0f
+                },
+                BranchId = voucher.BranchId,
+                Purpose = voucher.Purpose,
+                StartDate = voucher.StartDate,
+                EndDate = voucher.EndDate,
+                UsageCount = voucher.UsageCount,
+                UsageLimit = voucher.UsageLimit,
+                BeUsed = VoucherStatus(voucher)
+            };
+            return ServiceResult<VoucherDto>.Success(dto);
+        }
+        public ServiceResult<VoucherDto> GetVoucherCode(string voucherCode)
+        {
+            Voucher voucher;
+            try
+            {
+                voucher = _repository.GetSingleByCondition(v => v.VoucherCode == voucherCode);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult<VoucherDto>.NotFound($"Không tồn tại VoucherCode = {voucherCode}");
+            }
+            var dto = new VoucherDto
+            {
+                Infor = new VoucherBasicInfor
+                {
+                    VoucherCode = voucher.VoucherCode,
+                    DiscountPercent = voucher.DiscountPercent * 100.0f
+                },
+                BeUsed = VoucherStatus(voucher)
+            };
+            return ServiceResult<VoucherDto>.Success(dto);
+        }
         private UsedStatus VoucherStatus(Voucher voucher)
         {
             if(DateTime.UtcNow > voucher.EndDate || voucher.UsageCount >= voucher.UsageLimit)

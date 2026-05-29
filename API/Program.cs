@@ -1,3 +1,4 @@
+using API.BackgroundServices;
 using Infrastructure;
 using Shared.Results;
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,7 @@ builder.Services.AddControllers()
     });
 // Gọi DependencyInjection của Infrastructure (đã có DbContext + Services bên trong)
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<BoothMonitorWorker>();
 
 var app = builder.Build();
 

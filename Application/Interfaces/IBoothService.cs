@@ -16,5 +16,6 @@ namespace Application.Interfaces
         Task<ServiceResult> UpdateResources (Guid boothId, int? paper, int? ribbon);
         Task<ServiceResult> SetBoothStorage (Guid boothId, int? paperMax, int? ribbonMax);
         Task<ServiceResult> GetHeartBeat (Guid boothId);
+        Task<ServiceResult> SetStatus();
     }
 }
