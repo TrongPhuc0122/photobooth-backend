@@ -49,7 +49,7 @@ namespace API.Controllers
         [HttpDelete("{voucherId:int}")]
         public async Task<IActionResult> Delete([FromRoute] int voucherId)
         {
-            var result = await _voucherService.Delete(voucherId);
+            var result = await _voucherService.SoftDelete(voucherId);
             return ToActionResult(result);
         }
     }

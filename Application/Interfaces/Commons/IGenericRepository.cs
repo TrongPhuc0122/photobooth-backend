@@ -15,7 +15,7 @@ namespace Application.Interfaces.Commons
         // Marks an entity to be removed
         TEntity Delete(TEntity entity);
         TEntity Delete(TKey id);
-
+        TEntity SoftDelete(TKey id);
         //Delete multi records
         void DeleteMulti(Expression<Func<TEntity, bool>> where);
         void DeleteMulti(IEnumerable<TEntity> where);

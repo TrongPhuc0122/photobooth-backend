@@ -202,7 +202,7 @@ namespace Application.Services
             {
                 return ServiceResult<BoothDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
-        }
+        }      
         #endregion
         
         #region BoothError

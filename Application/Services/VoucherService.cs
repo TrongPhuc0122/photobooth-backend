@@ -42,6 +42,7 @@ namespace Application.Services
                 return ServiceResult<VoucherDto>.InternalServerError($"Lỗi tạo voucher 000: {ex.Message}");
 
             }
+            if(!VoucherDiscountCheck(dto)) return ServiceResult<VoucherDto>.InternalServerError("Lỗi tạo voucher 001");
             try
             {
                 var voucher = new Voucher
@@ -49,7 +50,7 @@ namespace Application.Services
                     BranchId = dto.BranchId,
                     VoucherCode = dto.VoucherCode,
                     Purpose = dto.Purpose,
-                    DiscountPercent = dto.DiscountPercent / 100.0f,
+                    DiscountPercent = dto.DiscountPercent,
                     CreatedAt = DateTime.UtcNow,
                     StartDate = dto.StartDate,
                     EndDate = dto.EndDate,
@@ -79,7 +80,7 @@ namespace Application.Services
             }
             catch (Exception ex)
             {
-                return ServiceResult<VoucherDto>.InternalServerError($"Lỗi tạo voucher 001: {ex.Message}");
+                return ServiceResult<VoucherDto>.InternalServerError($"Lỗi tạo voucher 002: {ex.Message}");
             }
         }   
         public ServiceResult<PagedResult<VoucherDto>> GetAll(VoucherQueryParameters parameters)
@@ -106,7 +107,7 @@ namespace Application.Services
                     {
                         VoucherId = voucher.VoucherId,
                         VoucherCode = voucher.VoucherCode,
-                        DiscountPercent = (int)(voucher.DiscountPercent * 100.0f)
+                        DiscountPercent = voucher.DiscountPercent * 100.0f
                     },
                     BranchId = voucher.BranchId,
                     Purpose = voucher.Purpose,
@@ -220,6 +221,11 @@ namespace Application.Services
                 return UsedStatus.Active;
             }
         }
+        private bool VoucherDiscountCheck(CreateVoucherDto dto)
+        {
+            float discount = dto.DiscountPercent / 100.0f;
+            if(discount > 1.0f) return false;
+            else return true;
+        }
     }
 }
-

@@ -2,7 +2,7 @@ using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Results;
+using Infrastructure.Context.Repositories;
 
 namespace API.Controllers
 {
@@ -48,7 +48,7 @@ namespace API.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
-            var result = await _branchService.Delete(id);
+            var result = await _branchService.SoftDelete(id);
             return ToActionResult(result);
         }
     }

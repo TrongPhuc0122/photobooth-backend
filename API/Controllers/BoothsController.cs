@@ -47,7 +47,7 @@ namespace API.Controllers
         [HttpDelete("{boothId:Guid}")]
         public async Task<IActionResult> Delete([FromRoute] Guid boothId)
         {
-            var result = await _boothsService.Delete(boothId);
+            var result = await _boothsService.SoftDelete(boothId);
             return ToActionResult(result);
         }
         #endregion

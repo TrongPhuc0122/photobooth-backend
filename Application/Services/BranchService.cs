@@ -15,14 +15,18 @@ namespace Application.Services
         : GenericService<Branch, BranchDto, CreateBranchDto, int>, IBranchService
     {
         private readonly IGenericRepository<Booths, int> _boothRepository;
+        private readonly IGenericRepository<Invoice, int> _invoiceRepository;
+
         public BranchService(
             IGenericRepository<Branch, int> repository,
             IGenericRepository<Booths, int> boothRepository,
+            IGenericRepository<Invoice, int> invoiceRepository,
             IMapper mapper,
             IUnitOfWork unitOfWork
         ) : base(repository, mapper, unitOfWork)
         {
             _boothRepository = boothRepository;
+            _invoiceRepository = invoiceRepository;
         }
 
         // BUSINESS
@@ -90,10 +94,21 @@ namespace Application.Services
                     Search = parameters.Search
                 };
                 string[] searchProprties = {"BranchName", "BranchCode", "Address"};
-                string[] includes = {"Booths", "Booths.BoothHealth", "Booths.Invoices"};
+                string[] includes = {"Booths", "Booths.BoothHealth"};
 
                 var pagedEntities = _repository.GetPaged(genericParams, searchProprties, includes);
                 var now = DateTime.UtcNow;
+                var branchIds = pagedEntities.Items.Select(b => b.BranchId).ToList();
+                var monthInvoices = _invoiceRepository.GetMulti(
+                    i => i.CreatedAt.Month == now.Month
+                        && i.CreatedAt.Year == now.Year
+                        && i.FlowStatus,
+                    includes: ["Booth"]);
+                var revenues = monthInvoices
+                    .Where(i => i.Booth != null && branchIds.Contains(i.Booth.BranchId))
+                    .GroupBy(i => i.Booth!.BranchId)
+                    .ToDictionary(g => g.Key, g => g.Sum(i => i.FinalPrice));
+
                 var result = pagedEntities.Items.Select(b => new BranchDto
                 {
                     Infor =
@@ -111,12 +126,7 @@ namespace Application.Services
                     TotalBooths = b.Booths.Count(),
                     ActiveBooths = b.Booths.Count(b => b.BoothHealth != null &&
                                                     b.BoothHealth.Status == Status.ONLINE),
-                    MonthlyRevenue = b.Booths?
-                            .SelectMany(b => b.Invoices ?? Enumerable.Empty<Invoice>())
-                            .Where(i => i.CreatedAt.Month == now.Month && 
-                                        i.CreatedAt.Year == now.Year && 
-                                        i.FlowStatus == true)
-                            .Sum(i => i.FinalPrice) ?? 0
+                    MonthlyRevenue = revenues.GetValueOrDefault(b.BranchId, 0)
                 }).ToList();
                 var pagedResult = new PagedResult<BranchDto>(
                     result,
@@ -137,7 +147,9 @@ namespace Application.Services
             Branch branch;
             try
             {
-                branch = _repository.GetSingleById(id);
+                branch = _repository.GetSingleByCondition(
+                    b => b.BranchId == id,
+                    includes: ["Booths", "Booths.BoothHealth"]);
             }
             catch (KeyNotFoundException)
             {
@@ -145,6 +157,7 @@ namespace Application.Services
             }
             try
             {
+                var now = DateTime.UtcNow;
                 var result = new BranchDto
                 {
                     Infor =
@@ -162,11 +175,13 @@ namespace Application.Services
                     ActiveBooths = branch.Booths.Count(b => b.BoothHealth != null &&
                                                             b.BoothHealth.Status == Status.ONLINE),
                     Status = branch.Status,
-                    MonthlyRevenue = branch.Booths
-                        .SelectMany(b => b.Invoices)
-                        .Where(i => i.CreatedAt.Month == DateTime.Now.Month
-                                && i.CreatedAt.Year == DateTime.Now.Year)
-                        .Sum(i => i.Price)
+                    MonthlyRevenue = _invoiceRepository.GetMulti(
+                        i => i.CreatedAt.Month == now.Month
+                            && i.CreatedAt.Year == now.Year
+                            && i.FlowStatus,
+                        includes: ["Booth"])
+                        .Where(i => i.Booth != null && i.Booth.BranchId == branch.BranchId)
+                        .Sum(i => i.FinalPrice)
                 };
                 return ServiceResult<BranchDto>.Success(result);
             }
@@ -174,27 +189,6 @@ namespace Application.Services
             {
                 return ServiceResult<BranchDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
-        }
-        public override async Task<ServiceResult> Delete(int id)
-        {
-            Branch branch;
-            try
-            {
-                branch  = _repository.GetSingleById(id);
-            }
-            catch (KeyNotFoundException)
-            {
-                return ServiceResult.NotFound($"Không tồn tại branch id = {id}");
-            }
-            bool isActive = _boothRepository.CheckContains(b => b.BranchId == id && b.BoothHealth != null && b.BoothHealth.Status == Status.ONLINE);
-            if (isActive)
-            {
-                return ServiceResult.ValidationError("Không thể xóa chi nhánh đang có booth hoạt động");
-            }
-            branch.IsDeleted = true;
-            _repository.Update(branch);
-            await _unitOfWork.SaveChangesAsync();
-            return ServiceResult.Success();
         }
         // VALIDATION
         private ServiceResult ValidateBranchName(string name)

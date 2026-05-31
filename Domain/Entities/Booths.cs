@@ -24,5 +24,6 @@ namespace Domain.Entities
 
         public virtual BoothResources? BoothResources { get; set; }
         public virtual ICollection<BoothError> BoothErrors { get; set; } = new List<BoothError>();
+        public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
     }
 }

@@ -1,6 +1,8 @@
 using API.BackgroundServices;
 using Infrastructure;
 using Shared.Results;
+using Microsoft.Extensions.FileProviders;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Đăng ký services
@@ -17,6 +19,12 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<BoothMonitorWorker>();
 
 var app = builder.Build();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider("E:\\My_Document\\Doan\\Images"),
+    RequestPath = "/images"
+});
 
 // Middleware
 if (app.Environment.IsDevelopment())

@@ -124,7 +124,23 @@ namespace Application.Services.Commons
                 return ServiceResult.InternalServerError($"{ErrorMessages.ErrorDeletingEntity}: {ex.Message}");
             }
         }
+        public virtual async Task<ServiceResult> SoftDelete(TKey id)
+        {
+            try
+            {
+                var exists = await _repository.IsExistAsync(id);
+                if (!exists)
+                    return ServiceResult.NotFound($"Entity with id {id} not found");
 
+                _repository.SoftDelete(id);
+                await _unitOfWork.SaveChangesAsync();
+                return ServiceResult.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult.InternalServerError($"{ErrorMessages.ErrorDeletingEntity}: {ex.Message}");
+            }
+        }
         /*public virtual ServiceResult<PagedResult<TDto>> GetPaged(CommonQueryParameters parameters, string[]? searchProperties, string[]? includes = null)
         {
             var pagedResult = _repository.GetPaged(parameters.ToGenericQueryParameters(), searchProperties, includes);

@@ -14,6 +14,7 @@ namespace Application.Services
     {
         private readonly IGenericRepository<Voucher, int> _voucherRepository;
         private readonly IGenericRepository<Booths, Guid> _boothRepository;
+
         public InvoiceService(
             IGenericRepository<Invoice, int> repository,
             IGenericRepository<Voucher, int> voucherRepository,
@@ -68,7 +69,7 @@ namespace Application.Services
                 {
                     Infor = {
                         Price = invoice.Price,
-                        DiscountPercent = voucher != null ? voucher.DiscountPercent : 0,
+                        DiscountPercent = voucher != null ? voucher.DiscountPercent * 100.0f : 0,
                         FinalPrice = invoice.FinalPrice
                     },
                     InvoiceCode = invoice.InvoiceCode,
@@ -88,7 +89,6 @@ namespace Application.Services
             string[] searchProperties = {"InvoiceCode"};
             string[] includes = {"Booth", "Voucher"};
             var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
-            var now = DateTime.UtcNow;
             var result = pagedEntities.Items.Select(i => new InvoiceDto
             {
                 Infor =
@@ -115,7 +115,6 @@ namespace Application.Services
             string[] searchProperties = {"InvoiceCode"};
             string[] includes = {"Booth.Branch","Booth", "Voucher"};
             var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
-            var now = DateTime.UtcNow;
             try
             {
                 var result = pagedEntities.Items.Select(i => new DetailInvoiceDto
@@ -156,40 +155,36 @@ namespace Application.Services
             Invoice invoice;
             try
             {
-                invoice = _repository.GetSingleById(InvoiceId);
+                invoice = _repository.GetSingleByCondition(
+                    i => i.InvoiceId == InvoiceId,
+                    includes: ["Booth.Branch", "Booth", "Voucher"]);
             }
             catch (KeyNotFoundException)
             {
                 return ServiceResult<DetailInvoiceDto>.NotFound($"Không tồn tại InvoideId = {InvoiceId}");
             }
-            try
+
+            var result = new DetailInvoiceDto
             {
-                var reult = new DetailInvoiceDto
+                BoothId = invoice.BoothId,
+                Infor =
                 {
-                    BoothId = invoice.BoothId,
-                        Infor =
-                        {
-                            InvoiceId = invoice.InvoiceId,
-                            InvoiceCode = invoice.InvoiceCode,
-                            BranchCode = invoice.Booth!.Branch.BranchCode,
-                            BoothName = invoice.Booth.BoothName
-                        },
-                        Payment =
-                        {
-                            Price = invoice.Price,
-                            VoucherCOde = invoice.Voucher?.VoucherCode,
-                            DiscountPercent = invoice.Voucher?.DiscountPercent * 100.0f,
-                            FinalPrice = invoice.FinalPrice,
-                            PaymentMethod = invoice.PaymentMethod
-                        },
-                        CreatedAt = invoice.CreatedAt
-                };
-                return ServiceResult<DetailInvoiceDto>.Success(reult);
-            }
-            catch(Exception ex)
-            {
-                return ServiceResult<DetailInvoiceDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
-            }
+                    InvoiceId = invoice.InvoiceId,
+                    InvoiceCode = invoice.InvoiceCode,
+                    BranchCode = invoice.Booth!.Branch.BranchCode,
+                    BoothName = invoice.Booth.BoothName
+                },
+                Payment =
+                {
+                    Price = invoice.Price,
+                    VoucherCOde = invoice.Voucher?.VoucherCode,
+                    DiscountPercent = invoice.Voucher?.DiscountPercent * 100.0f,
+                    FinalPrice = invoice.FinalPrice,
+                    PaymentMethod = invoice.PaymentMethod
+                },
+                CreatedAt = invoice.CreatedAt
+            };
+            return ServiceResult<DetailInvoiceDto>.Success(result);
         }
         // VALIDATOR
         public ServiceResult CheckExist(Guid boothId)

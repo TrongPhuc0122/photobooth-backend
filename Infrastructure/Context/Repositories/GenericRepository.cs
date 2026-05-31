@@ -1,4 +1,5 @@
 using Application.Interfaces.Commons;
+using Domain.Entities.Commons;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Shared.Extensions;
@@ -40,7 +41,6 @@ namespace Infrastructure.Context.Repositories
         {
             return _dbSet.Remove(entity).Entity;
         }
-
         public virtual TEntity Delete(TKey id)
         {
             var entity = _dbSet.Find(id);
@@ -56,6 +56,18 @@ namespace Infrastructure.Context.Repositories
             foreach (var obj in objects)
                 _dbSet.Remove(obj);
         }
+        public virtual TEntity SoftDelete(TKey id)
+        {
+            var entity = GetSingleById(id);
+
+            if (entity is not BaseEntity baseEntity)
+                throw new InvalidOperationException($"Entity '{typeof(TEntity).Name}' does not support soft delete.");
+
+            baseEntity.IsDeleted = true;
+            baseEntity.DeletedAt = DateTime.UtcNow;
+            _context.Entry(entity).State = EntityState.Modified;
+            return entity;
+        }
 
         public virtual void DeleteMulti(IEnumerable<TEntity> where)
         {
@@ -65,17 +77,28 @@ namespace Infrastructure.Context.Repositories
 
         public async Task<bool> IsExistAsync(TKey id)
         {
-            var entity = await _dbSet.FindAsync(id);
-            return entity != null;
+            try
+            {
+                _ = await Task.FromResult(GetSingleById(id));
+                return true;
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
         }
 
         public virtual TEntity GetSingleById(TKey id)
         {
             var entity = _dbSet.Find(id);
-            if (entity is null)
+            if (entity is null || IsSoftDeleted(entity))
                 throw new KeyNotFoundException($"Entity '{typeof(TEntity).Name}' with id '{id}' not found.");
             return entity;
         }
+
+        private static bool IsSoftDeleted(TEntity entity) =>
+            entity is BaseEntity { IsDeleted: true } ||
+            entity is BaseEntity { DeletedAt: not null };
 
         // Kept from sample: convenience query method (includes string is currently unused)
         public virtual IEnumerable<TEntity> GetMany(Expression<Func<TEntity, bool>> where, string includes)
@@ -239,7 +262,7 @@ namespace Infrastructure.Context.Repositories
         public virtual TEntity GetSingleById(string id)
         {
             var entity = _dbSet.Find(id);
-            if (entity is null)
+            if (entity is null || IsSoftDeleted(entity))
                 throw new KeyNotFoundException($"Entity '{typeof(TEntity).Name}' with id '{id}' not found.");
             return entity;
         }
