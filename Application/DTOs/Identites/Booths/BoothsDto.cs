@@ -4,6 +4,7 @@ namespace Application.DTOs.Identites.Booths;
 public class BoothDto
 {
     public BoothBasicInfor Infor { get; set; }= new();
+    public int BranchId { get; set; }
     public string BranchName { get; set; } = string.Empty;
     public string BoothIp { get; set; } = string.Empty;
     public string? Creator { get; set; }

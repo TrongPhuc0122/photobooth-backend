@@ -4,4 +4,4 @@
 bin/
 obj/
 PushData/
-appsettings.Development.json/
+appsettings.Development.json

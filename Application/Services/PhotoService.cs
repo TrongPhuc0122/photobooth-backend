@@ -49,7 +49,7 @@ public class PhotoService : GenericService<Photo, PhotoDto, CreatePhotoDto, int>
         _repository.Update(photo);
         await _unitOfWork.SaveChangesAsync();
 
-        var imageUrl = $"{_baseUrl}/images/{photo.PhotoId}.png"; // ✅
+        var imageUrl = $"{_baseUrl}/images/{photo.PhotoId}.png";
         var qrGenerator = new QRCodeGenerator();
         var qrData = qrGenerator.CreateQrCode(imageUrl, QRCodeGenerator.ECCLevel.Q);
         var qrCode = new PngByteQRCode(qrData);

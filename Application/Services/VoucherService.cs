@@ -50,7 +50,7 @@ namespace Application.Services
                     BranchId = dto.BranchId,
                     VoucherCode = dto.VoucherCode,
                     Purpose = dto.Purpose,
-                    DiscountPercent = dto.DiscountPercent,
+                    DiscountPercent = dto.DiscountPercent / 100.0f,
                     CreatedAt = DateTime.UtcNow,
                     StartDate = dto.StartDate,
                     EndDate = dto.EndDate,

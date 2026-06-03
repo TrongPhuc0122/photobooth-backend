@@ -99,6 +99,7 @@ namespace Application.Services
                         BoothId = booth.BoothId,
                         BoothName = booth.BoothName
                     },
+                    BranchId = booth.BranchId,
                     BranchName = branch.BranchName,
                     BoothIp = booth.BoothIp,
                     Brand = booth.Brand,
@@ -133,6 +134,7 @@ namespace Application.Services
                         BoothId = b.BoothId,
                         BoothName = b.BoothName
                     },
+                    BranchId = b.BranchId,
                     BranchName = b.Branch.BranchName,
                     BoothIp = b.BoothIp,
                     Brand = b.Brand,
@@ -183,6 +185,7 @@ namespace Application.Services
                         BoothId = booth.BoothId,
                         BoothName = booth.BoothName
                     },
+                    BranchId = booth.BranchId,
                     BranchName = booth.Branch?.BranchName ?? string.Empty,
                     BoothIp = booth.BoothIp,
                     Brand = booth.Brand,
@@ -395,6 +398,16 @@ namespace Application.Services
                 if(health.BoothHealth == null) return ServiceResult.InternalServerError($"Không tìm thấy BoothHealth cho BoothId = {health.BoothId}");
                 if(health.BoothHealth.Status != Status.ONLINE) health.BoothHealth.Status = Status.OFFLINE;
                 _healthRepository.Update(health.BoothHealth);
+            }
+            var activeBranch = _branchRepository.GetMulti(b => b.Booths.Any(booth => booth.BoothHealth != null && booth.BoothHealth.Status == Status.ONLINE), includes: ["Booths", "Booths.BoothHealth"]);
+            foreach(var branch in activeBranch)
+            {
+                branch.Status = Status.ONLINE;
+            }
+            var offlineBranch = _branchRepository.GetMulti(b => !b.Booths.Any(booth => booth.BoothHealth != null && booth.BoothHealth.Status == Status.ONLINE), includes: ["Booths", "Booths.BoothHealth"]);
+            foreach(var branch in offlineBranch)
+            {
+                branch.Status = Status.OFFLINE;
             }
             await _unitOfWork.SaveChangesAsync();
             return ServiceResult.Success();
