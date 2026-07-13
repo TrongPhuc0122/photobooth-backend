@@ -6,5 +6,7 @@ namespace Application.Interfaces;
 
 public interface IDashBoardService
 {
-    Task<ServiceResult<DashBoardDto>> GetDashboard(DateTime? from, DateTime? to);
+    Task<ServiceResult<DashBoardDto>> GetDashboard(DateTime From, DateTime To);
+    Task<ServiceResult<DashBoardDto>> Get7DaysDashboard();
+    Task<ServiceResult<DashBoardDto>> Get6MonthsDashboard();
 }

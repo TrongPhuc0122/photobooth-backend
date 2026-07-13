@@ -20,5 +20,6 @@ namespace Domain.Entities
         public string PhoneNumber { get; set; } = string.Empty;
 
         public virtual ICollection<Booths> Booths { get; set; } = new List<Booths>();
+        public virtual ICollection<Frame> Frames { get; set; } = new List<Frame>();
     }
 }

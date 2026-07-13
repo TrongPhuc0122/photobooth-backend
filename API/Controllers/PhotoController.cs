@@ -19,5 +19,12 @@ namespace API.Controllers
             var result = await _photoService.CreatePhoto(dto);
             return ToActionResult(result);
         }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPhoto(int id)
+        {
+            var result = await _photoService.GetPhoto(id);
+            return ToActionResult(result);
+        }
     }
 }

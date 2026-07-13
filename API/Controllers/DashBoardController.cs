@@ -1,7 +1,8 @@
-using Application.DTOs.Commons;
-using Application.DTOs.Identites.Booths;
 using Application.Interfaces;
+using Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using Shared;
+using Shared.Results;
 
 namespace API.Controllers
 {
@@ -15,9 +16,23 @@ namespace API.Controllers
             _dashboardService = dashBoardService;
         }
         [HttpGet]
-        public async Task<IActionResult> GetDashBoard([FromQuery] DateTime From,[FromQuery] DateTime To)
+        public async Task<IActionResult> GetDashBoard([FromQuery] DateTime? From,[FromQuery] DateTime? To, [FromQuery] DashBoardQuery range)
         {
-            var result = await _dashboardService.GetDashboard(From, To);
+            ServiceResult<DashBoardDto> result;
+            switch (range)
+            {
+                case DashBoardQuery.Custom:
+                    result = await _dashboardService.GetDashboard(From!.Value, To!.Value);
+                    break;
+                case DashBoardQuery.Last7Days:
+                    result = await _dashboardService.Get7DaysDashboard();
+                    break;
+                case DashBoardQuery.Last6Months:
+                    result = await _dashboardService.Get6MonthsDashboard();
+                    break;
+                default:
+                    return BadRequest("Invalid range");
+            }
             return ToActionResult(result);
         }
     }

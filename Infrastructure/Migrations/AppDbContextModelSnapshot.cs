@@ -190,6 +190,58 @@ namespace Infrastructure.Migrations
                     b.ToTable("Branches");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Frame", b =>
+                {
+                    b.Property<int>("FrameId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FrameId"));
+
+                    b.Property<string>("BackgroundUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Branchname")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FrameName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OverlayUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubjectImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TopicName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("FrameId");
+
+                    b.HasIndex("BranchId");
+
+                    b.ToTable("Frames");
+                });
+
             modelBuilder.Entity("Domain.Entities.Invoice", b =>
                 {
                     b.Property<int>("InvoiceId")
@@ -272,12 +324,19 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("FrameId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PrintCount")
                         .HasColumnType("int");
+
+                    b.Property<string>("QRCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("PhotoId");
 
@@ -384,6 +443,15 @@ namespace Infrastructure.Migrations
                     b.Navigation("Branch");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Frame", b =>
+                {
+                    b.HasOne("Domain.Entities.Branch", "Branch")
+                        .WithMany("Frames")
+                        .HasForeignKey("BranchId");
+
+                    b.Navigation("Branch");
+                });
+
             modelBuilder.Entity("Domain.Entities.Invoice", b =>
                 {
                     b.HasOne("Domain.Entities.Booths", "Booth")
@@ -404,7 +472,7 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Photo", b =>
                 {
                     b.HasOne("Domain.Entities.Booths", "Booths")
-                        .WithMany()
+                        .WithMany("Photos")
                         .HasForeignKey("BoothId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -430,11 +498,15 @@ namespace Infrastructure.Migrations
                     b.Navigation("BoothResources");
 
                     b.Navigation("Invoices");
+
+                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Branch", b =>
                 {
                     b.Navigation("Booths");
+
+                    b.Navigation("Frames");
                 });
 #pragma warning restore 612, 618
         }

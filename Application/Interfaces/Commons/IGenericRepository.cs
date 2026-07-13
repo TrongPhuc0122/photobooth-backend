@@ -35,5 +35,7 @@ namespace Application.Interfaces.Commons
 
         int Count(Expression<Func<TEntity, bool>> where);
         bool CheckContains(Expression<Func<TEntity, bool>> predicate);
+
+        IQueryable<TEntity> Query();
     }
 }

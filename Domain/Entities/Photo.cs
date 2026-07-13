@@ -8,7 +8,9 @@ namespace Domain.Entities
         [Key]
         public int PhotoId{ get; set; }
         public Guid BoothId{ get; set; }
+        public int? FrameId { get; set; }
         public string ImageUrl{ get; set; } = string.Empty;
+        public string QRCode { get; set; } = string.Empty;
         public int PrintCount{ get; set; }
         public DateTime CreatedAt{ get; set; } = DateTime.UtcNow;
 

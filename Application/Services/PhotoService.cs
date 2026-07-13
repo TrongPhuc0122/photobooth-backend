@@ -7,6 +7,7 @@ using Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Shared.Results;
 using QRCoder;
+using System.Drawing;
 
 namespace Application.Services;
 public class PhotoService : GenericService<Photo, PhotoDto, CreatePhotoDto, int>, IPhotoServices 
@@ -31,36 +32,62 @@ public class PhotoService : GenericService<Photo, PhotoDto, CreatePhotoDto, int>
     {
         if (!_boothRepository.CheckContains(b => b.BoothId == dto.BoothId))
         return ServiceResult<PhotoDto>.NotFound($"Không tìm thấy booth {dto.BoothId}");
-
-        byte[] imageBytes = Convert.FromBase64String(dto.Base64Image);
-        var photo = new Photo
+        try
         {
-            BoothId = dto.BoothId,
-            ImageUrl = string.Empty,
-            PrintCount = 0,
-            CreatedAt = DateTime.UtcNow
-        };
-        _repository.Add(photo);
-        await _unitOfWork.SaveChangesAsync();
+           byte[] imageBytes = Convert.FromBase64String(dto.Base64Image);
+            var photo = new Photo
+            {
+                BoothId = dto.BoothId,
+                ImageUrl = string.Empty,
+                PrintCount = 0,
+                CreatedAt = DateTime.UtcNow
+            };
+            _repository.Add(photo);
+            await _unitOfWork.SaveChangesAsync();
 
-        var filePath = Path.Combine(_imagePath, $"{photo.PhotoId}.png");
-        await File.WriteAllBytesAsync(filePath, imageBytes);
-        photo.ImageUrl = $"images/{photo.PhotoId}.png";
-        _repository.Update(photo);
-        await _unitOfWork.SaveChangesAsync();
+            var filePath = Path.Combine(_imagePath, $"{photo.PhotoId}.png");
+            await File.WriteAllBytesAsync(filePath, imageBytes);
+            photo.ImageUrl = $"images/{photo.PhotoId}.png";
+            _repository.Update(photo);
+            await _unitOfWork.SaveChangesAsync();
 
-        var imageUrl = $"{_baseUrl}/images/{photo.PhotoId}.png";
-        var qrGenerator = new QRCodeGenerator();
-        var qrData = qrGenerator.CreateQrCode(imageUrl, QRCodeGenerator.ECCLevel.Q);
-        var qrCode = new PngByteQRCode(qrData);
-        byte[] qrBytes = qrCode.GetGraphic(10);
-        var qrBase64 = Convert.ToBase64String(qrBytes);
+            var imageUrl = $"{_baseUrl}/images/{photo.PhotoId}.png";
+            var qrGenerator = new QRCodeGenerator();
+            var qrData = qrGenerator.CreateQrCode(imageUrl, QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new PngByteQRCode(qrData);
+            byte[] qrBytes = qrCode.GetGraphic(10);
+            var qrBase64 = Convert.ToBase64String(qrBytes);
 
-
-        return ServiceResult<PhotoDto>.Created(new PhotoDto
+            photo.QRCode = qrBase64;
+            await _unitOfWork.SaveChangesAsync();
+            return ServiceResult<PhotoDto>.Created(new PhotoDto
+            {
+                QRCode = qrBase64,
+                URL = imageUrl
+            }); 
+        }
+        catch(Exception ex)
         {
-            QRCode = qrBase64,
-            URL = imageUrl
-        });
+            return ServiceResult<PhotoDto>.InternalServerError($"Lỗi lưu ảnh {ex.Message}");
+        }
+        
+    }
+    public async Task<ServiceResult<PhotoDto>> GetPhoto(int id)
+    {
+        var photo = new Photo();
+        try
+        {
+            photo = _repository.GetSingleById(id);
+            var dto = new PhotoDto
+            {
+                URL = photo.ImageUrl,
+                QRCode = photo.QRCode
+            };
+            return ServiceResult<PhotoDto>.Success(dto);
+        }
+        catch (KeyNotFoundException)
+        {
+            return ServiceResult<PhotoDto>.NotFound($"Không tìm thấy ảnh có id = {id}");
+        }
     }
 }

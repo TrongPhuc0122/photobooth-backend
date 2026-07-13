@@ -33,7 +33,7 @@ namespace Infrastructure
             services.AddScoped<IVoucherService, VoucherService>();
             services.AddScoped<IDashBoardService, DashBoardService>();
             services.AddScoped<IPhotoServices, PhotoService>();
-            
+            services.AddScoped<IFrameService, FrameService>();
             return services;
         }
     }

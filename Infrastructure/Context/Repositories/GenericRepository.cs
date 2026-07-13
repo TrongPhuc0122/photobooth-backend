@@ -266,5 +266,10 @@ namespace Infrastructure.Context.Repositories
                 throw new KeyNotFoundException($"Entity '{typeof(TEntity).Name}' with id '{id}' not found.");
             return entity;
         }
+
+        public IQueryable<TEntity> Query()
+        {
+            return _dbSet.AsQueryable();
+        }
     }
 }
