@@ -2,43 +2,41 @@ using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Results;
+using Shared;
 
 namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class InvoicesController : BaseController
+    public class FramesController : BaseController
     {
-        private readonly IInvoiceService _invoiceService;
-        public InvoicesController(IInvoiceService invoiceService)
+        private readonly IFrameService _frameService;
+
+        public FramesController(IFrameService frameService)
         {
-            _invoiceService = invoiceService;
+            _frameService = frameService;
         }
+
         [HttpGet]
-        public IActionResult GetAll([FromQuery] InvoiceQueryParameters parameters, bool detail=false)
+        public IActionResult GetAll(
+            [FromQuery] CommonQueryParameters parameters,
+            [FromQuery] LayoutType layout = LayoutType.All)
         {
-            if (!detail)
-            {
-                var result = _invoiceService.GetAll(parameters);
-                return ToActionResult(result);
-            }
-            else
-            {
-                var result = _invoiceService.GetDetailAll(parameters);
-                return ToActionResult(result);
-            }  
-        }
-        [HttpGet("{invoiceId:int}")]
-        public IActionResult GetDetailById(int invoiceId)
-        {
-            var result = _invoiceService.GetDetailById(invoiceId);
+            var result = _frameService.GetAll(parameters, layout);
             return ToActionResult(result);
         }
-        [HttpPost("{boothId:Guid}")]
-        public async Task<IActionResult> Create(Guid boothId, [FromBody] CreateInvoicesDto dto)
+
+        [HttpGet("{id:int}")]
+        public IActionResult GetById([FromRoute] int id)
         {
-            var result = await _invoiceService.CreateAsync(boothId, dto);
+            var result = _frameService.GetById(id);
+            return ToActionResult(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateFrameDto model)
+        {
+            var result = await _frameService.CreateAsync(model);
             return ToActionResult(result);
         }
     }

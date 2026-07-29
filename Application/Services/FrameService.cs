@@ -5,249 +5,257 @@ using Application.Interfaces.Commons;
 using Application.Services.Commons;
 using AutoMapper;
 using Domain.Entities;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Shared;
 using Shared.Results;
-using System.Drawing;
+using SixLabors.ImageSharp;
 
 namespace Application.Services;
 
 public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>, IFrameService
 {
-    private const int RequiredWidth = 1600;
+    private readonly IGenericRepository<Branch, int> _branchRepository;
+    private readonly IConfiguration _configuration;
+
+    private const int RequiredWidth = 1200;
     private const int RequiredHeight = 1800;
 
-    private readonly IGenericRepository<Branch, int> _branchRepository;
-    private readonly string _imagePath;
-    private readonly string _baseUrl;
-
     public FrameService(
-        IGenericRepository<Branch, int> branchRepository,
         IGenericRepository<Frame, int> repository,
-        IConfiguration configuration,
+        IGenericRepository<Branch, int> branchRepository,
         IMapper mapper,
-        IUnitOfWork unitOfWork
+        IUnitOfWork unitOfWork,
+        IConfiguration configuration
     ) : base(repository, mapper, unitOfWork)
     {
         _branchRepository = branchRepository;
-        _imagePath = configuration["FrameStorage:Path"]!;
-        _baseUrl = configuration["FrameStorage:BaseUrl"]!;
+        _configuration = configuration;
     }
 
-    public async Task<ServiceResult<FrameDto>> CreateFrame(CreateFrameDto dto)
+    public override async Task<ServiceResult<FrameDto>> CreateAsync(CreateFrameDto dto)
     {
-        if (dto.Background == null || dto.Overlay == null || dto.SubjectImage == null || string.IsNullOrWhiteSpace(dto.FrameName))
+        if (dto.BranchId.HasValue)
         {
-            return ServiceResult<FrameDto>.ValidationError("Thiếu thông tin frame");
+            try
+            {
+                _branchRepository.GetSingleById(dto.BranchId.Value);
+            }
+            catch (KeyNotFoundException)
+            {
+                return ServiceResult<FrameDto>.NotFound($"Không tồn tại BranchId = {dto.BranchId}");
+            }
         }
 
-        var sizeValidation = ValidateImageSizes(
-            dto.SubjectImage,
-            dto.Background,
-            dto.Overlay);
-        if (sizeValidation != null)
-            return sizeValidation;
+        byte[] subjectBytes, backgroundBytes, overlayBytes;
+        try
+        {
+            subjectBytes = Convert.FromBase64String(CleanBase64(dto.SubjectImage));
+            backgroundBytes = Convert.FromBase64String(CleanBase64(dto.Background));
+            overlayBytes = Convert.FromBase64String(CleanBase64(dto.Overlay));
+        }
+        catch (FormatException)
+        {
+            return ServiceResult<FrameDto>.ValidationError("Dữ liệu base64 không hợp lệ");
+        }
+
+        var subjectCheck = ValidateImageDimension(subjectBytes, "SubjectImage");
+        if (subjectCheck != null) return ServiceResult<FrameDto>.ValidationError(subjectCheck);
+
+        var backgroundCheck = ValidateImageDimension(backgroundBytes, "Background");
+        if (backgroundCheck != null) return ServiceResult<FrameDto>.ValidationError(backgroundCheck);
+
+        var overlayCheck = ValidateImageDimension(overlayBytes, "Overlay");
+        if (overlayCheck != null) return ServiceResult<FrameDto>.ValidationError(overlayCheck);
 
         try
         {
+            // B1: Tạo Frame trước (chưa có URL ảnh) để lấy FrameId
             var frame = new Frame
             {
                 BranchId = dto.BranchId,
                 Branchname = dto.BranchName,
                 FrameName = dto.FrameName,
                 TopicId = dto.TopicId,
-                TopicName = dto.TopicName,
+                LayoutType = dto.LayoutType,
+                SubjectImageUrl = string.Empty,
+                BackgroundUrl = string.Empty,
+                OverlayUrl = string.Empty,
                 CreatedAt = DateTime.UtcNow
             };
+
             _repository.Add(frame);
+            await _unitOfWork.SaveChangesAsync(); // -> có frame.FrameId
+
+            // B2: Lưu ảnh vào Frame/{FrameId}/...
+            var subjectUrl = await SaveImageAsync(frame.FrameId, "subject", subjectBytes);
+            var backgroundUrl = await SaveImageAsync(frame.FrameId, "background", backgroundBytes);
+            var overlayUrl = await SaveImageAsync(frame.FrameId, "overlay", overlayBytes);
+
+            // B3: Update lại URL rồi save lần 2
+            frame.SubjectImageUrl = subjectUrl;
+            frame.BackgroundUrl = backgroundUrl;
+            frame.OverlayUrl = overlayUrl;
+
             await _unitOfWork.SaveChangesAsync();
 
-            var baseUrl = $"frame/{frame.FrameId}/";
+            var result = new FrameDto
+            {
+                FrameId = frame.FrameId,
+                BranchId = frame.BranchId,
+                BranchName = frame.Branchname,
+                FrameName = frame.FrameName,
+                TopicId = frame.TopicId,
+                LayoutType = frame.LayoutType,
+                SubjectImageUrl = frame.SubjectImageUrl,
+                BackgroundUrl = frame.BackgroundUrl,
+                OverlayUrl = frame.OverlayUrl,
+                CreatedAt = frame.CreatedAt
+            };
 
-            frame.SubjectImageUrl = baseUrl + "SubjectImage.png";
-            frame.BackgroundUrl = baseUrl + "Background.png";
-            frame.OverlayUrl = baseUrl + "Overlay.png";
-            await _unitOfWork.SaveChangesAsync();
-
-            var folder = Path.Combine(_imagePath, frame.FrameId.ToString());
-            Directory.CreateDirectory(folder);
-            await SaveFileAsync(dto.SubjectImage, Path.Combine(folder, "SubjectImage.png"));
-            await SaveFileAsync(dto.Background, Path.Combine(folder, "Background.png"));
-            await SaveFileAsync(dto.Overlay, Path.Combine(folder, "Overlay.png"));
-
-            return ServiceResult<FrameDto>.Success(MapToDto(frame));
+            return ServiceResult<FrameDto>.Created(result);
         }
         catch (Exception ex)
         {
-            return ServiceResult<FrameDto>.InternalServerError($"Lỗi tạo frame {ex.Message}");
+            return ServiceResult<FrameDto>.InternalServerError($"Lỗi tạo Frame: {ex.Message}");
         }
     }
 
-    public ServiceResult<PagedResult<FrameDto>> GetAll(FrameQueryParameters parameters)
+    public ServiceResult<PagedResult<FrameDto>> GetAll(CommonQueryParameters parameters, LayoutType layout)
     {
         try
         {
-            var genericParams = parameters.ToGenericQueryParameters();
-            string[] searchProperties = { "Branchname" };
-            string[] includes = { "Branch" };
+            string[] includes = { "Branch", "Topic" };
 
-            var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
-            var result = pagedEntities.Items.Select(MapToDto);
+            var frames = _repository.GetMulti(
+                f => (layout == LayoutType.All || f.LayoutType == layout)
+                && (string.IsNullOrEmpty(parameters.Search) || f.FrameName.Contains(parameters.Search)),
+                includes: includes
+            );
+
+            var totalCount = frames.Count();
+
+            var pagedFrames = frames
+                .Skip((parameters.Index - 1) * parameters.PageSize)
+                .Take(parameters.PageSize)
+                .ToList();
+
+            var result = pagedFrames.Select(f => new FrameDto
+            {
+                FrameId = f.FrameId,
+                BranchId = f.BranchId,
+                BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
+                FrameName = f.FrameName,
+                TopicId = f.TopicId,
+                TopicName = f.Topic?.TopicName ?? string.Empty,
+                LayoutType = f.LayoutType,
+                SubjectImageUrl = f.SubjectImageUrl,
+                BackgroundUrl = f.BackgroundUrl,
+                OverlayUrl = f.OverlayUrl,
+                CreatedAt = f.CreatedAt
+            });
+
             var pagedResult = new PagedResult<FrameDto>(
                 result,
-                pagedEntities.TotalCount,
-                pagedEntities.Index,
-                pagedEntities.PageSize
+                totalCount,
+                parameters.Index,
+                parameters.PageSize
             );
+
             return ServiceResult<PagedResult<FrameDto>>.Success(pagedResult);
         }
         catch (Exception ex)
         {
-            return ServiceResult<PagedResult<FrameDto>>.InternalServerError($"Lỗi lấy danh sách frame {ex.Message}");
+            return ServiceResult<PagedResult<FrameDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
         }
     }
 
-    public override ServiceResult<FrameDto> GetById(int frameId)
+    public override ServiceResult<FrameDto> GetById(int id)
     {
+        Frame frame;
         try
         {
-            var frame = _repository.GetSingleById(frameId);
-            return ServiceResult<FrameDto>.Success(MapToDto(frame));
+            string[] includes = { "Branch", "Topic" };
+            frame = _repository.GetSingleByCondition(
+                f => f.FrameId == id,
+                includes
+            );
         }
         catch (KeyNotFoundException)
         {
-            return ServiceResult<FrameDto>.NotFound($"Không tồn tại FrameId = {frameId}");
+            return ServiceResult<FrameDto>.NotFound($"Không tồn tại FrameId = {id}");
         }
-    }
-
-    public async Task<ServiceResult<FrameDto>> UpdateFrame(int frameId, UpdateFrameDto dto)
-    {
         try
         {
-            var frame = _repository.GetSingleById(frameId);
-
-            var sizeValidation = ValidateImageSizes(
-                dto.SubjectImage,
-                dto.Background,
-                dto.Overlay);
-            if (sizeValidation != null)
-                return sizeValidation;
-
-            frame.BranchId = dto.BranchId;
-            frame.Branchname = dto.BranchName;
-            frame.FrameName = dto.FrameName;
-            frame.FrameId = dto.FrameId;
-            frame.TopicId = dto.TopicId;
-            frame.TopicName = dto.TopicName;
-
-            var folder = Path.Combine(_imagePath, frame.FrameId.ToString());
-            Directory.CreateDirectory(folder);
-
-            if (dto.SubjectImage != null)
+            var dto = new FrameDto
             {
-                await SaveFileAsync(dto.SubjectImage, Path.Combine(folder, "SubjectImage.png"));
-                frame.SubjectImageUrl = $"frame/{frame.FrameId}/SubjectImage.png";
-            }
-
-            if (dto.Background != null)
-            {
-                await SaveFileAsync(dto.Background, Path.Combine(folder, "Background.png"));
-                frame.BackgroundUrl = $"frame/{frame.FrameId}/Background.png";
-            }
-
-            if (dto.Overlay != null)
-            {
-                await SaveFileAsync(dto.Overlay, Path.Combine(folder, "Overlay.png"));
-                frame.OverlayUrl = $"frame/{frame.FrameId}/Overlay.png";
-            }
-
-            _repository.Update(frame);
-            await _unitOfWork.SaveChangesAsync();
-
-            return ServiceResult<FrameDto>.Success(MapToDto(frame));
-        }
-        catch (KeyNotFoundException)
-        {
-            return ServiceResult<FrameDto>.NotFound($"Không tồn tại FrameId = {frameId}");
+                FrameId = frame.FrameId,
+                BranchId = frame.BranchId,
+                BranchName = frame.Branch?.BranchName ?? frame.Branchname ?? string.Empty,
+                FrameName = frame.FrameName,
+                TopicId = frame.TopicId,
+                TopicName = frame.Topic?.TopicName ?? string.Empty,
+                LayoutType = frame.LayoutType,
+                SubjectImageUrl = frame.SubjectImageUrl,
+                BackgroundUrl = frame.BackgroundUrl,
+                OverlayUrl = frame.OverlayUrl,
+                CreatedAt = frame.CreatedAt
+            };
+            return ServiceResult<FrameDto>.Success(dto);
         }
         catch (Exception ex)
         {
-            return ServiceResult<FrameDto>.InternalServerError($"Lỗi chỉnh sửa {ex.Message}");
+            return ServiceResult<FrameDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
         }
     }
 
-    public async Task<ServiceResult> SoftDeleteFrame(int frameId)
+    private static string CleanBase64(string base64)
+    {
+        var commaIndex = base64.IndexOf(',');
+        return commaIndex >= 0 ? base64[(commaIndex + 1)..] : base64;
+    }
+
+    private static string? ValidateImageDimension(byte[] imageBytes, string fieldName)
     {
         try
         {
-            _repository.SoftDelete(frameId);
-            await _unitOfWork.SaveChangesAsync();
-            return ServiceResult.NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return ServiceResult.NotFound($"Không tồn tại FrameId = {frameId}");
-        }
-        catch (Exception ex)
-        {
-            return ServiceResult.InternalServerError($"Lỗi xóa frame: {ex.Message}");
-        }
-    }
-
-    private static FrameDto MapToDto(Frame frame) => new()
-    {
-        BranchId = frame.BranchId,
-        BranchName = frame.Branchname,
-        FrameName = frame.FrameName,
-        FrameId = frame.FrameId,
-        Topic = frame.TopicId.HasValue
-            ? new FrameTopicDto { TopicId = frame.TopicId.Value, TopicName = frame.TopicName ?? string.Empty }
-            : null,
-        SubjectImageUrl = frame.SubjectImageUrl,
-        BackgroundUrl = frame.BackgroundUrl,
-        OverlayUrl = frame.OverlayUrl,
-        CreatedAt = frame.CreatedAt
-    };
-
-    private static ServiceResult<FrameDto>? ValidateImageSizes(params IFormFile?[] files)
-    {
-        foreach (var file in files)
-        {
-            if (file == null)
-                continue;
-
-            var validation = ValidateImageSize(file);
-            if (validation != null)
-                return validation;
-        }
-
-        return null;
-    }
-
-    private static ServiceResult<FrameDto>? ValidateImageSize(IFormFile file)
-    {
-        try
-        {
-            using var stream = file.OpenReadStream();
-            using var image = Image.FromStream(stream);
-
+            using var image = Image.Load(imageBytes);
             if (image.Width != RequiredWidth || image.Height != RequiredHeight)
             {
-                return ServiceResult<FrameDto>.ValidationError(
-                    $"Ảnh '{file.FileName}' phải có kích thước {RequiredWidth}x{RequiredHeight}px (hiện tại: {image.Width}x{image.Height}px)");
+                return $"{fieldName} phải có kích thước {RequiredWidth}x{RequiredHeight}, " +
+                       $"ảnh hiện tại là {image.Width}x{image.Height}";
             }
+            return null;
         }
-        catch (Exception)
+        catch (UnknownImageFormatException)
         {
-            return ServiceResult<FrameDto>.ValidationError($"File '{file.FileName}' không phải là ảnh hợp lệ");
+            return $"{fieldName} không đúng định dạng ảnh (png, jpg, ...)";
         }
-
-        return null;
     }
 
-    private static async Task SaveFileAsync(IFormFile file, string path)
+    // folder: Frame/{frameId}/{imageType}.png
+    private async Task<string> SaveImageAsync(int frameId, string imageType, byte[] imageBytes)
     {
-        await using var stream = File.Create(path);
-        await file.CopyToAsync(stream);
+        var storagePath = _configuration["FrameStorage:Path"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình FrameStorage:Path");
+        var baseUrl = _configuration["FrameStorage:BaseUrl"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình FrameStorage:BaseUrl");
+
+        var rootPath = Path.IsPathRooted(storagePath)
+            ? storagePath
+            : Path.Combine(Directory.GetCurrentDirectory(), storagePath);
+
+        var folderPath = Path.Combine(rootPath, frameId.ToString());
+
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+
+        var fileName = $"{imageType}.png";
+        var filePath = Path.Combine(folderPath, fileName);
+
+        await File.WriteAllBytesAsync(filePath, imageBytes);
+
+        return $"{baseUrl}/Frame/{frameId}/{fileName}";
     }
 }

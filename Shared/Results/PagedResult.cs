@@ -7,7 +7,7 @@
         public int Index { get; set; }
         public int PageSize { get; set; }
         public int TotalPages { get; set; }
-        public bool HasPreviousPage => Index > 1;
+        public bool HasPreviousPage => Index > 0;
         public bool HasNextPage => Index < TotalPages;
         public PagedResult()
         {

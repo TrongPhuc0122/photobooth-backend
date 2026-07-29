@@ -51,5 +51,11 @@ namespace API.Controllers
             var result = await _branchService.SoftDelete(id);
             return ToActionResult(result);
         }
+        [HttpGet("options")]
+        public IActionResult GetOptions()
+        {
+            var result = _branchService.GetAllOptions();
+            return ToActionResult(result);
+        }
     }
 }

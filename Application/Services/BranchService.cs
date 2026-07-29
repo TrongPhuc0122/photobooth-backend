@@ -190,6 +190,16 @@ namespace Application.Services
                 return ServiceResult<BranchDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
         }
+        public ServiceResult<IEnumerable<BranchOptionDto>> GetAllOptions()
+        {
+            var branches = _repository.GetAll(); // không phân trang
+            var result = branches.Select(b => new BranchOptionDto
+            {
+                BranchCode = b.BranchCode,
+                BranchName = b.BranchName
+            });
+            return ServiceResult<IEnumerable<BranchOptionDto>>.Success(result);
+        }
         // VALIDATION
         private ServiceResult ValidateBranchName(string name)
         {

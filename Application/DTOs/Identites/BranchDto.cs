@@ -10,7 +10,7 @@ public class BranchDto
     public string Address { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public Status Status { get; set; }
-    public DateTime CreateAt = DateTime.UtcNow;
+    public DateTime CreateAt { get; set; }
     public int TotalBooths { get; set; }
     public int ActiveBooths { get; set; }
     public decimal MonthlyRevenue { get; set; }

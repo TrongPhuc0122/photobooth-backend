@@ -9,6 +9,9 @@ build:
 clean:
 	dotnet clean
 
+reset:
+	dotnet clean
+	dotnet build
 # Thêm cờ --verbose để xem lệnh SQL "bay" vào database
 update-db:
 	dotnet ef database update --project Infrastructure --startup-project API --verbose
