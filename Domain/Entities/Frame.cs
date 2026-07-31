@@ -12,7 +12,6 @@ public class Frame : BaseEntity
     public int? BranchId { get; set; }
     public string? Branchname { get; set; } = string.Empty;
     public required string FrameName { get; set; } = string.Empty;
-
     public int TopicId { get; set; }
     public required LayoutType LayoutType { get; set; }
 

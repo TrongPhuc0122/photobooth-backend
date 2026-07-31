@@ -2,41 +2,52 @@ using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared;
 
 namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FramesController : BaseController
+    public class InvoiceController : BaseController
     {
-        private readonly IFrameService _frameService;
+        private readonly IInvoiceService _invoiceService;
 
-        public FramesController(IFrameService frameService)
+        public InvoiceController(IInvoiceService invoiceService)
         {
-            _frameService = frameService;
+            _invoiceService = invoiceService;
         }
 
         [HttpGet]
-        public IActionResult GetAll(
-            [FromQuery] CommonQueryParameters parameters,
-            [FromQuery] LayoutType layout = LayoutType.All)
+        public IActionResult GetAll([FromQuery] InvoiceQueryParameters parameters)
         {
-            var result = _frameService.GetAll(parameters, layout);
+            var result = _invoiceService.GetAll(parameters);
             return ToActionResult(result);
         }
 
-        [HttpGet("{id:int}")]
-        public IActionResult GetById([FromRoute] int id)
+        [HttpGet("detail")]
+        public IActionResult GetDetailAll([FromQuery] InvoiceQueryParameters parameters)
         {
-            var result = _frameService.GetById(id);
+            var result = _invoiceService.GetDetailAll(parameters);
             return ToActionResult(result);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateFrameDto model)
+        [HttpGet("{invoiceId:int}")]
+        public IActionResult GetById([FromRoute] int invoiceId)
         {
-            var result = await _frameService.CreateAsync(model);
+            var result = _invoiceService.GetById(invoiceId);
+            return ToActionResult(result);
+        }
+
+        [HttpGet("detail/{invoiceId:int}")]
+        public IActionResult GetDetailById([FromRoute] int invoiceId)
+        {
+            var result = _invoiceService.GetDetailById(invoiceId);
+            return ToActionResult(result);
+        }
+
+        [HttpPost("{boothId:Guid}")]
+        public async Task<IActionResult> Create([FromRoute] Guid boothId, [FromBody] CreateInvoicesDto model)
+        {
+            var result = await _invoiceService.CreateAsync(boothId, model);
             return ToActionResult(result);
         }
     }

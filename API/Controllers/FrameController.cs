@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Application.DTOs.Identites;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Shared;
 
 namespace API.Controllers
 {
@@ -17,9 +18,9 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll([FromQuery] FrameQueryParameters parameters)
+        public IActionResult GetAll([FromQuery] FrameQueryParameters parameters, LayoutType layout)
         {
-            var result = _frameService.GetAll(parameters);
+            var result = _frameService.GetAll(parameters, layout);
             return ToActionResult(result);
         }
         [HttpGet("{frameId:int}")]
@@ -31,20 +32,14 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CreateFrameDto dto)
         {
-            var result = await _frameService.CreateFrame(dto);
+            var result = await _frameService.CreateAsync(dto);
             return ToActionResult(result);
         }
 
         [HttpDelete("{frameId:int}")]
         public async Task<IActionResult> Delete([FromRoute] int frameId)
         {
-            var result = await _frameService.SoftDeleteFrame(frameId);
-            return ToActionResult(result);
-        }
-        [HttpPut("{frameId:int}")]
-        public async Task<IActionResult> Update([FromRoute] int frameId, [FromForm]UpdateFrameDto dto)
-        {
-            var result = await _frameService.UpdateFrame(frameId, dto);
+            var result = await _frameService.SoftDelete(frameId);
             return ToActionResult(result);
         }
 

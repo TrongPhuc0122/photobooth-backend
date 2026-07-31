@@ -69,13 +69,11 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
 
         try
         {
-            // B1: Tạo Frame trước (chưa có URL ảnh) để lấy FrameId
             var frame = new Frame
             {
                 BranchId = dto.BranchId,
                 Branchname = dto.BranchName,
                 FrameName = dto.FrameName,
-                TopicId = dto.TopicId,
                 LayoutType = dto.LayoutType,
                 SubjectImageUrl = string.Empty,
                 BackgroundUrl = string.Empty,
@@ -84,14 +82,12 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             };
 
             _repository.Add(frame);
-            await _unitOfWork.SaveChangesAsync(); // -> có frame.FrameId
+            await _unitOfWork.SaveChangesAsync(); 
 
-            // B2: Lưu ảnh vào Frame/{FrameId}/...
             var subjectUrl = await SaveImageAsync(frame.FrameId, "subject", subjectBytes);
             var backgroundUrl = await SaveImageAsync(frame.FrameId, "background", backgroundBytes);
             var overlayUrl = await SaveImageAsync(frame.FrameId, "overlay", overlayBytes);
 
-            // B3: Update lại URL rồi save lần 2
             frame.SubjectImageUrl = subjectUrl;
             frame.BackgroundUrl = backgroundUrl;
             frame.OverlayUrl = overlayUrl;
@@ -104,7 +100,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = frame.BranchId,
                 BranchName = frame.Branchname,
                 FrameName = frame.FrameName,
-                TopicId = frame.TopicId,
+                TopicId = frame.Topic!.TopicId,
                 LayoutType = frame.LayoutType,
                 SubjectImageUrl = frame.SubjectImageUrl,
                 BackgroundUrl = frame.BackgroundUrl,
@@ -145,7 +141,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = f.BranchId,
                 BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
                 FrameName = f.FrameName,
-                TopicId = f.TopicId,
+                TopicId = f.Topic!.TopicId,
                 TopicName = f.Topic?.TopicName ?? string.Empty,
                 LayoutType = f.LayoutType,
                 SubjectImageUrl = f.SubjectImageUrl,
@@ -192,7 +188,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = frame.BranchId,
                 BranchName = frame.Branch?.BranchName ?? frame.Branchname ?? string.Empty,
                 FrameName = frame.FrameName,
-                TopicId = frame.TopicId,
+                TopicId = frame.Topic!.TopicId,
                 TopicName = frame.Topic?.TopicName ?? string.Empty,
                 LayoutType = frame.LayoutType,
                 SubjectImageUrl = frame.SubjectImageUrl,
@@ -232,7 +228,6 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         }
     }
 
-    // folder: Frame/{frameId}/{imageType}.png
     private async Task<string> SaveImageAsync(int frameId, string imageType, byte[] imageBytes)
     {
         var storagePath = _configuration["FrameStorage:Path"]
