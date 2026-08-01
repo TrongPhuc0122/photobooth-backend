@@ -30,7 +30,7 @@ namespace API.Controllers
             return ToActionResult(result);
         }
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] CreateFrameDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateFrameDto dto)
         {
             var result = await _frameService.CreateAsync(dto);
             return ToActionResult(result);

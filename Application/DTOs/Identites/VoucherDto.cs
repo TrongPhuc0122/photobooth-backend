@@ -5,7 +5,7 @@ namespace Application.DTOs.Identites;
 public class VoucherDto
 {
     public VoucherBasicInfor Infor { get; set; } = new();
-    public int? BranchId { get; set; }
+    public string? BranchCode { get; set; }
     public string Purpose {get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }

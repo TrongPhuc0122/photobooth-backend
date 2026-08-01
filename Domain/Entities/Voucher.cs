@@ -7,7 +7,7 @@ namespace Domain.Entities
     {
         [Key]
         public int VoucherId{ get; set; }
-        public int? BranchId { get; set; }
+        public string? BranchCode { get; set; }
         public string VoucherCode{ get; set; } = string.Empty;
         public string Purpose{ get; set; } = string.Empty;
         public float DiscountPercent{ get; set; }
@@ -18,6 +18,5 @@ namespace Domain.Entities
         public int UsageCount { get; set; }
         public string Creator { get; set; } = string.Empty;
 
-        public virtual Branch Branch{ get; set; } = null!;
     }
 }

@@ -7,6 +7,7 @@ using AutoMapper;
 using Domain.Entities;
 using Shared;
 using Shared.Results;
+using System.Linq.Expressions;
 
 namespace Application.Services
 {
@@ -47,7 +48,7 @@ namespace Application.Services
             {
                 var voucher = new Voucher
                 {
-                    BranchId = dto.BranchId,
+                    BranchCode = dto.BranchCode,
                     VoucherCode = dto.VoucherCode,
                     Purpose = dto.Purpose,
                     DiscountPercent = dto.DiscountPercent / 100.0f,
@@ -68,7 +69,7 @@ namespace Application.Services
                         VoucherCode = voucher.VoucherCode,
                         DiscountPercent = voucher.DiscountPercent * 100.0f
                     },
-                    BranchId = voucher.BranchId,
+                    BranchCode = voucher.BranchCode,
                     Purpose = voucher.Purpose,
                     StartDate = voucher.StartDate,
                     EndDate = voucher.EndDate,
@@ -88,28 +89,35 @@ namespace Application.Services
             try
             {
                 var genericParams = parameters.ToGenericQueryParameters();
-                string[] searchProperties = {"Purpose", "VoucherCode"};
-                string[] includes = {"Branch"};
-                var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
-                var filtered = pagedEntities.Items.AsEnumerable();
-                if(parameters.usedStatus.HasValue){
+                string[] searchProperties = { "Purpose", "VoucherCode" };
+                string[] includes = { };
+
+                Expression<Func<Voucher, bool>>? predicate = null;
+                if (parameters.BeUsed.HasValue)
+                {
                     var now = DateTime.UtcNow;
-                    filtered = parameters.usedStatus switch
+                    predicate = parameters.BeUsed switch
                     {
-                        UsedStatus.Active => filtered.Where(v => v.UsageLimit == null || v.UsageCount < v.UsageLimit),
-                        UsedStatus.Expired => filtered.Where(v => v.UsageCount >= v.UsageLimit && v.UsageLimit != null),
-                        _ => filtered 
+                        UsedStatus.Expired => v => now > v.EndDate || v.UsageCount >= v.UsageLimit,
+                        UsedStatus.UpComing => v => now < v.StartDate,
+                        UsedStatus.Active => v => now >= v.StartDate &&
+                                                (v.EndDate == null || now <= v.EndDate) &&
+                                                (v.UsageLimit == null || v.UsageCount < v.UsageLimit),
+                        _ => null
                     };
                 }
+
+                var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProperties, includes);
+
                 var result = pagedEntities.Items.Select(voucher => new VoucherDto
                 {
-                    Infor =
+                    Infor = new VoucherBasicInfor
                     {
                         VoucherId = voucher.VoucherId,
                         VoucherCode = voucher.VoucherCode,
                         DiscountPercent = voucher.DiscountPercent * 100.0f
                     },
-                    BranchId = voucher.BranchId,
+                    BranchCode = voucher.BranchCode,
                     Purpose = voucher.Purpose,
                     StartDate = voucher.StartDate,
                     EndDate = voucher.EndDate,
@@ -117,6 +125,7 @@ namespace Application.Services
                     UsageCount = voucher.UsageCount,
                     BeUsed = VoucherStatus(voucher)
                 });
+
                 var pagedResult = new PagedResult<VoucherDto>(
                     result,
                     pagedEntities.TotalCount,
@@ -125,7 +134,7 @@ namespace Application.Services
                 );
                 return ServiceResult<PagedResult<VoucherDto>>.Success(pagedResult);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return ServiceResult<PagedResult<VoucherDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
@@ -174,7 +183,7 @@ namespace Application.Services
                     VoucherCode = voucher.VoucherCode,
                     DiscountPercent = voucher.DiscountPercent * 100.0f
                 },
-                BranchId = voucher.BranchId,
+                BranchCode = voucher.BranchCode,
                 Purpose = voucher.Purpose,
                 StartDate = voucher.StartDate,
                 EndDate = voucher.EndDate,

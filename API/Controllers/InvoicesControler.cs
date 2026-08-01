@@ -7,11 +7,11 @@ namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class InvoiceController : BaseController
+    public class InvoicesController : BaseController
     {
         private readonly IInvoiceService _invoiceService;
 
-        public InvoiceController(IInvoiceService invoiceService)
+        public InvoicesController(IInvoiceService invoiceService)
         {
             _invoiceService = invoiceService;
         }

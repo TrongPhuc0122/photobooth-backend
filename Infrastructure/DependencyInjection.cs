@@ -34,6 +34,7 @@ namespace Infrastructure
             services.AddScoped<IDashBoardService, DashBoardService>();
             services.AddScoped<IPhotoServices, PhotoService>();
             services.AddScoped<IFrameService, FrameService>();
+            services.AddScoped<ITopicService, TopicService>();
             return services;
         }
     }

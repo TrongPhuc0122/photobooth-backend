@@ -206,7 +206,7 @@ namespace Shared.Extensions
 
             var constantExpression = Expression.Constant(convertedValue, propertyExpression.Type);
 
-            return filter.Operator.ToLower() switch
+            return filter.Operator.Trim().ToLower() switch
             {
                 "==" => Expression.Equal(propertyExpression, constantExpression),
                 "!=" => Expression.NotEqual(propertyExpression, constantExpression),

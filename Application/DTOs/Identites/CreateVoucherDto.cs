@@ -2,7 +2,7 @@ namespace Application.DTOs.Identites;
 
 public class CreateVoucherDto
 {
-    public int? BranchId { get; set; }
+    public string? BranchCode { get; set; }
     public required string VoucherCode { get; set; }
     public required float DiscountPercent { get; set; }
     public required string Purpose { get; set; }

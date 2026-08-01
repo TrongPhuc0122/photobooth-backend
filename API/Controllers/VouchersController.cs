@@ -8,10 +8,10 @@ namespace API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VoucherController : BaseController
+    public class VouchersController : BaseController
     {
         private readonly IVoucherService _voucherService;
-        public VoucherController(IVoucherService voucherService)
+        public VouchersController(IVoucherService voucherService)
         {
             _voucherService = voucherService;
         }

@@ -5,26 +5,31 @@ namespace Application.DTOs.Commons;
 
 public class VoucherQueryParameters : CommonQueryParameters
 {
-    public UsedStatus? usedStatus { get; set; }
+    public UsedStatus? BeUsed { get; set; }
     public override GenericQueryParameters ToGenericQueryParameters()
     {
         var gqp = base.ToGenericQueryParameters();
-        if (usedStatus.HasValue)
+        if (BeUsed.HasValue)
         {
             var now = DateTime.UtcNow;
-            switch (usedStatus)
+            switch (BeUsed)
             {
                 case UsedStatus.UpComing:
                     gqp.AddFilter("StartDate", ">", now);
                     break;
                 case UsedStatus.Active:
                     gqp.AddFilter("StartDate", "<=", now);
-                    gqp.AddFilter("EndDate", ">=    ", now);
+                    gqp.AddFilter("EndDate", ">=", now);
                     break;
                 case UsedStatus.Expired:
                     gqp.AddFilter("EndDate", "<", now);
                     break;
             }
+        }
+        Console.WriteLine($"[DEBUG] usedStatus={BeUsed}, FilterCount={gqp.Filters.Count}");
+        foreach (var f in gqp.Filters)
+        {
+            Console.WriteLine($"[DEBUG] Field={f.Field}, Operator='{f.Operator}', Value={f.Value}");
         }
         return gqp;
     }

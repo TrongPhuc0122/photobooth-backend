@@ -40,6 +40,7 @@ namespace Infrastructure.Context
         public DbSet<BoothHealth> BoothHealth { get; set; }
         public DbSet<BoothError> BoothError { get; set; }
         public DbSet<Frame> Frames { get; set; }
+        public DbSet<Topic> Topics { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             
