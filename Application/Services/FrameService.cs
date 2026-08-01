@@ -74,6 +74,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = dto.BranchId,
                 Branchname = dto.BranchName,
                 FrameName = dto.FrameName,
+                TopicId = dto.TopicId,
                 LayoutType = dto.LayoutType,
                 SubjectImageUrl = string.Empty,
                 BackgroundUrl = string.Empty,
@@ -100,7 +101,8 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = frame.BranchId,
                 BranchName = frame.Branchname,
                 FrameName = frame.FrameName,
-                TopicId = frame.Topic!.TopicId,
+                TopicId = frame.TopicId,
+                TopicName = frame.Topic?.TopicName ?? string.Empty,
                 LayoutType = frame.LayoutType,
                 SubjectImageUrl = frame.SubjectImageUrl,
                 BackgroundUrl = frame.BackgroundUrl,
@@ -141,7 +143,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = f.BranchId,
                 BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
                 FrameName = f.FrameName,
-                TopicId = f.Topic!.TopicId,
+                TopicId = f.TopicId,
                 TopicName = f.Topic?.TopicName ?? string.Empty,
                 LayoutType = f.LayoutType,
                 SubjectImageUrl = f.SubjectImageUrl,
@@ -188,7 +190,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchId = frame.BranchId,
                 BranchName = frame.Branch?.BranchName ?? frame.Branchname ?? string.Empty,
                 FrameName = frame.FrameName,
-                TopicId = frame.Topic!.TopicId,
+                TopicId = frame.TopicId,
                 TopicName = frame.Topic?.TopicName ?? string.Empty,
                 LayoutType = frame.LayoutType,
                 SubjectImageUrl = frame.SubjectImageUrl,
@@ -214,7 +216,8 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
     {
         try
         {
-            using var image = Image.Load(imageBytes);
+            using var ms = new MemoryStream(imageBytes);
+            using var image = Image.Load(ms);
             if (image.Width != RequiredWidth || image.Height != RequiredHeight)
             {
                 return $"{fieldName} phải có kích thước {RequiredWidth}x{RequiredHeight}, " +
