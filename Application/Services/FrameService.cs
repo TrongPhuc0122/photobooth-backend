@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
@@ -15,6 +16,7 @@ namespace Application.Services;
 public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>, IFrameService
 {
     private readonly IGenericRepository<Branch, int> _branchRepository;
+    private readonly IGenericRepository<Topic, int> _topicRepository;
     private readonly IConfiguration _configuration;
 
     private const int RequiredWidth = 1200;
@@ -23,33 +25,45 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
     public FrameService(
         IGenericRepository<Frame, int> repository,
         IGenericRepository<Branch, int> branchRepository,
+        IGenericRepository<Topic, int> topicRepository,
         IMapper mapper,
         IUnitOfWork unitOfWork,
         IConfiguration configuration
     ) : base(repository, mapper, unitOfWork)
     {
         _branchRepository = branchRepository;
+        _topicRepository = topicRepository;
         _configuration = configuration;
     }
 
     public override async Task<ServiceResult<FrameDto>> CreateAsync(CreateFrameDto dto)
     {
-        if (dto.BranchId.HasValue)
+        if (dto.BranchCode != null)
         {
             try
             {
-                _branchRepository.GetSingleById(dto.BranchId.Value);
+                _branchRepository.GetSingleByCondition(b => b.BranchCode == dto.BranchCode);
             }
             catch (KeyNotFoundException)
             {
-                return ServiceResult<FrameDto>.NotFound($"Không tồn tại BranchId = {dto.BranchId}");
+                return ServiceResult<FrameDto>.NotFound($"Không tồn tại BranchCode = {dto.BranchCode}");
             }
+        }
+
+        Topic topic;
+        try
+        {
+            topic = _topicRepository.GetSingleByCondition(t => t.TopicName == dto.TopicName);
+        }
+        catch (KeyNotFoundException)
+        {
+            return ServiceResult<FrameDto>.NotFound($"Không tồn tại Topic: {dto.TopicName}");
         }
 
         byte[] subjectBytes, backgroundBytes, overlayBytes;
         try
         {
-            subjectBytes = Convert.FromBase64String(CleanBase64(dto.SubjectImage));
+            subjectBytes = Convert.FromBase64String(CleanBase64(dto.Subject));
             backgroundBytes = Convert.FromBase64String(CleanBase64(dto.Background));
             overlayBytes = Convert.FromBase64String(CleanBase64(dto.Overlay));
         }
@@ -58,7 +72,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             return ServiceResult<FrameDto>.ValidationError("Dữ liệu base64 không hợp lệ");
         }
 
-        var subjectCheck = ValidateImageDimension(subjectBytes, "SubjectImage");
+        var subjectCheck = ValidateImageDimension(subjectBytes, "Subject");
         if (subjectCheck != null) return ServiceResult<FrameDto>.ValidationError(subjectCheck);
 
         var backgroundCheck = ValidateImageDimension(backgroundBytes, "Background");
@@ -71,42 +85,41 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         {
             var frame = new Frame
             {
-                BranchId = dto.BranchId,
+                BranchCode = dto.BranchCode,
                 Branchname = dto.BranchName,
                 FrameName = dto.FrameName,
-                TopicId = dto.TopicId,
-                LayoutType = dto.LayoutType,
-                SubjectImageUrl = string.Empty,
-                BackgroundUrl = string.Empty,
-                OverlayUrl = string.Empty,
+                TopicId = topic.TopicId,
+                Subject = string.Empty,
+                Background = string.Empty,
+                Overlay = string.Empty,
                 CreatedAt = DateTime.UtcNow
             };
 
             _repository.Add(frame);
-            await _unitOfWork.SaveChangesAsync(); 
+            await _unitOfWork.SaveChangesAsync();
 
             var subjectUrl = await SaveImageAsync(frame.FrameId, "subject", subjectBytes);
             var backgroundUrl = await SaveImageAsync(frame.FrameId, "background", backgroundBytes);
             var overlayUrl = await SaveImageAsync(frame.FrameId, "overlay", overlayBytes);
 
-            frame.SubjectImageUrl = subjectUrl;
-            frame.BackgroundUrl = backgroundUrl;
-            frame.OverlayUrl = overlayUrl;
+            frame.Subject = subjectUrl;
+            frame.Background = backgroundUrl;
+            frame.Overlay = overlayUrl;
 
             await _unitOfWork.SaveChangesAsync();
 
             var result = new FrameDto
             {
                 FrameId = frame.FrameId,
-                BranchId = frame.BranchId,
+                BranchCode = frame.BranchCode,
                 BranchName = frame.Branchname,
                 FrameName = frame.FrameName,
                 TopicId = frame.TopicId,
-                TopicName = frame.Topic?.TopicName ?? string.Empty,
-                LayoutType = frame.LayoutType,
-                SubjectImageUrl = frame.SubjectImageUrl,
-                BackgroundUrl = frame.BackgroundUrl,
-                OverlayUrl = frame.OverlayUrl,
+                TopicName = topic.TopicName,
+                LayoutType = topic.layoutType,
+                Subject = frame.Subject,
+                Background = frame.Background,
+                Overlay = frame.Overlay,
                 CreatedAt = frame.CreatedAt
             };
 
@@ -124,39 +137,33 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         {
             string[] includes = { "Branch", "Topic" };
 
-            var frames = _repository.GetMulti(
-                f => (layout == LayoutType.All || f.LayoutType == layout)
-                && (string.IsNullOrEmpty(parameters.Search) || f.FrameName.Contains(parameters.Search)),
-                includes: includes
-            );
+            var genericParams = parameters.ToGenericQueryParameters();
 
-            var totalCount = frames.Count();
+            Expression<Func<Frame, bool>>? predicate = layout == LayoutType.All
+                ? null
+                : f => f.Topic != null && f.Topic.layoutType == layout;
 
-            var pagedFrames = frames
-                .Skip((parameters.Index - 1) * parameters.PageSize)
-                .Take(parameters.PageSize)
-                .ToList();
-
-            var result = pagedFrames.Select(f => new FrameDto
+            var pagedFrames = _repository.GetPaged(predicate, genericParams, null, includes);
+            var result = pagedFrames.Items.Select(f => new FrameDto
             {
                 FrameId = f.FrameId,
-                BranchId = f.BranchId,
+                BranchCode = f.BranchCode,
                 BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
                 FrameName = f.FrameName,
                 TopicId = f.TopicId,
                 TopicName = f.Topic?.TopicName ?? string.Empty,
-                LayoutType = f.LayoutType,
-                SubjectImageUrl = f.SubjectImageUrl,
-                BackgroundUrl = f.BackgroundUrl,
-                OverlayUrl = f.OverlayUrl,
+                LayoutType = f.Topic?.layoutType ?? default,
+                Subject = f.Subject,
+                Background = f.Background,
+                Overlay = f.Overlay,
                 CreatedAt = f.CreatedAt
             });
 
             var pagedResult = new PagedResult<FrameDto>(
                 result,
-                totalCount,
-                parameters.Index,
-                parameters.PageSize
+                pagedFrames.TotalCount,
+                pagedFrames.Index,
+                pagedFrames.PageSize
             );
 
             return ServiceResult<PagedResult<FrameDto>>.Success(pagedResult);
@@ -187,15 +194,15 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             var dto = new FrameDto
             {
                 FrameId = frame.FrameId,
-                BranchId = frame.BranchId,
+                BranchCode = frame.BranchCode,
                 BranchName = frame.Branch?.BranchName ?? frame.Branchname ?? string.Empty,
                 FrameName = frame.FrameName,
                 TopicId = frame.TopicId,
                 TopicName = frame.Topic?.TopicName ?? string.Empty,
-                LayoutType = frame.LayoutType,
-                SubjectImageUrl = frame.SubjectImageUrl,
-                BackgroundUrl = frame.BackgroundUrl,
-                OverlayUrl = frame.OverlayUrl,
+                LayoutType = frame.Topic?.layoutType ?? default,
+                Subject = frame.Subject,
+                Background = frame.Background,
+                Overlay = frame.Overlay,
                 CreatedAt = frame.CreatedAt
             };
             return ServiceResult<FrameDto>.Success(dto);

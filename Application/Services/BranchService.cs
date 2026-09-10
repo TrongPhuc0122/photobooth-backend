@@ -8,6 +8,7 @@ using Shared.Results;
 using Shared;
 using Application.DTOs.Commons;
 using Shared.QueryParameter;
+using System.Linq.Expressions;
 
 namespace Application.Services
 {
@@ -92,11 +93,16 @@ namespace Application.Services
                     SortBy = parameters.SortBy,
                     SortDirection = parameters.SortDirection,
                     Search = parameters.Search
+                    
                 };
+                Expression<Func<Branch, bool>>? predicate = parameters.Status.HasValue
+                    ? b => b.Status == parameters.Status.Value
+                    : null;
+
                 string[] searchProprties = {"BranchName", "BranchCode", "Address"};
                 string[] includes = {"Booths", "Booths.BoothHealth"};
 
-                var pagedEntities = _repository.GetPaged(genericParams, searchProprties, includes);
+                var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProprties, includes);
                 var now = DateTime.UtcNow;
                 var branchIds = pagedEntities.Items.Select(b => b.BranchId).ToList();
                 var monthInvoices = _invoiceRepository.GetMulti(
@@ -192,7 +198,7 @@ namespace Application.Services
         }
         public ServiceResult<IEnumerable<BranchOptionDto>> GetAllOptions()
         {
-            var branches = _repository.GetAll(); // không phân trang
+            var branches = _repository.GetAll(); 
             var result = branches.Select(b => new BranchOptionDto
             {
                 BranchCode = b.BranchCode,

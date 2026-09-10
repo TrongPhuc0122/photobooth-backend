@@ -9,15 +9,14 @@ public class Frame : BaseEntity
 {
     [Key]
     public int FrameId { get; set; }
-    public int? BranchId { get; set; }
+    public string? BranchCode { get; set; }
     public string? Branchname { get; set; } = string.Empty;
     public required string FrameName { get; set; } = string.Empty;
     public int TopicId { get; set; }
-    public required LayoutType LayoutType { get; set; }
 
-    public required string SubjectImageUrl { get; set; } = string.Empty;
-    public required string BackgroundUrl { get; set; } = string.Empty;
-    public required string OverlayUrl { get; set; } = string.Empty;
+    public required string Subject { get; set; } = string.Empty;
+    public required string Background { get; set; } = string.Empty;
+    public required string Overlay { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }
 

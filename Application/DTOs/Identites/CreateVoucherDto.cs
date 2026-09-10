@@ -9,5 +9,6 @@ public class CreateVoucherDto
     public required DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public int? UsageLimit { get; set; }
+    public int UsageCount { get; set; }
     public required string Creator { get; set; }
 }

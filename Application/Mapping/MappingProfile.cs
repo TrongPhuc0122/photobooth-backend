@@ -2,6 +2,7 @@ using Application.DTOs.Identites.Booths;
 using Application.DTOs.Identites;
 using AutoMapper;
 using Domain.Entities;
+using Application.DTOs;
 
 namespace Application.Mappings
 {
@@ -24,6 +25,15 @@ namespace Application.Mappings
             // Voucher
             CreateMap<Voucher, VoucherDto>();
             CreateMap<CreateVoucherDto, Voucher>();
+
+            // Topic
+            CreateMap<Topic, TopicDto>() 
+                .ForMember(dest => dest.FrameCount, opt => opt.MapFrom(src => src.Frames.Count));
+            CreateMap<CreateTopicDto, Topic>();
+
+            // Frame
+            CreateMap<Frame, FrameDto>();
+            CreateMap<CreateFrameDto, Frame>();
         }
     }
 }

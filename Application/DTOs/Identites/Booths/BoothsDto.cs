@@ -6,6 +6,7 @@ public class BoothDto
     public BoothBasicInfor Infor { get; set; }= new();
     public int BranchId { get; set; }
     public string BranchName { get; set; } = string.Empty;
+    public string BranchCode { get; set; } = string.Empty;
     public string BoothIp { get; set; } = string.Empty;
     public string? Creator { get; set; }
     public string Brand { get; set; } = string.Empty;

@@ -8,7 +8,7 @@ namespace Application.Interfaces
 {
     public interface IBoothService : IGenericService<Booths, BoothDto, CreateBoothDto, Guid>
     {
-        ServiceResult<PagedResult<BoothDto>> GetAll(CommonQueryParameters parameters);
+        ServiceResult<PagedResult<BoothDto>> GetAll(BoothQueryParameters parameters);
         Task<ServiceResult> CreateError(Guid boothId, CreateBoothErrorDto dto);
         ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(Guid boothId);
         ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(Guid boothId);

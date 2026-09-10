@@ -17,7 +17,7 @@ namespace API.Controllers
         }
         #region Booths
         [HttpGet]
-        public IActionResult GetAll([FromQuery] CommonQueryParameters parameters)
+        public IActionResult GetAll([FromQuery] BoothQueryParameters parameters)
         {
             var result = _boothsService.GetAll(parameters);
             return ToActionResult(result);

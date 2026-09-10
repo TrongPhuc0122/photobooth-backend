@@ -28,6 +28,8 @@ namespace Infrastructure.Context
             }
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+            modelBuilder.Entity<Setting>().OwnsOne(s => s.Camera);
+            modelBuilder.Entity<Setting>().OwnsOne(s => s.Printer);
         }
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Voucher> Vouchers { get; set; }
@@ -41,6 +43,7 @@ namespace Infrastructure.Context
         public DbSet<BoothError> BoothError { get; set; }
         public DbSet<Frame> Frames { get; set; }
         public DbSet<Topic> Topics { get; set; }
+        public DbSet<Setting> Settings { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             

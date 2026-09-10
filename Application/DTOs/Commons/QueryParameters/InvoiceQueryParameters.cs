@@ -10,6 +10,7 @@ public class InvoiceQueryParameters : CommonQueryParameters
     public DateTime? From { get; set; }
     public DateTime? To { get; set; }
     public PaymentMethodStatus? PaymentMethod { get; set; }
+    public int? VoucherId { get; set; }
     public override GenericQueryParameters ToGenericQueryParameters()
     {
         var iqp = base.ToGenericQueryParameters();

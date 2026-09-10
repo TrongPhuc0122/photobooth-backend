@@ -7,5 +7,6 @@ using Shared.Results;
 namespace Application.Interfaces;
 public interface ITopicService : IGenericService<Topic, TopicDto, CreateTopicDto, int>
 {
-    ServiceResult<PagedResult<TopicDto>> GetAll(CommonQueryParameters parameters);
+    ServiceResult<PagedResult<TopicDto>> GetAll(TopicQueryParameters parameters);
+    ServiceResult<IEnumerable<TopicOptionDto>> GetAllOptions();
 }

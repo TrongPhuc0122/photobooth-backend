@@ -41,3 +41,6 @@ safe-run:
 	dotnet clean
 	dotnet build || exit 1
 	dotnet run --project API
+
+script-db:
+	dotnet ef migrations script --project Infrastructure --startup-project API -o database.sql

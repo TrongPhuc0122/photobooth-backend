@@ -198,8 +198,11 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FrameId"));
 
-                    b.Property<string>("BackgroundUrl")
+                    b.Property<string>("Background")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BranchCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("BranchId")
@@ -221,14 +224,11 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<int>("LayoutType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("OverlayUrl")
+                    b.Property<string>("Overlay")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SubjectImageUrl")
+                    b.Property<string>("Subject")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -347,6 +347,22 @@ namespace Infrastructure.Migrations
                     b.ToTable("Photos");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Setting", b =>
+                {
+                    b.Property<int>("SettingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SettingId"));
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("SettingId");
+
+                    b.ToTable("Settings");
+                });
+
             modelBuilder.Entity("Domain.Entities.Topic", b =>
                 {
                     b.Property<int>("TopicId")
@@ -355,9 +371,24 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TopicId"));
 
+                    b.Property<string>("BranchCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("TopicName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("layoutType")
+                        .HasColumnType("int");
 
                     b.HasKey("TopicId");
 
@@ -467,7 +498,7 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("BranchId");
 
                     b.HasOne("Domain.Entities.Topic", "Topic")
-                        .WithMany()
+                        .WithMany("Frames")
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -505,6 +536,105 @@ namespace Infrastructure.Migrations
                     b.Navigation("Booths");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Setting", b =>
+                {
+                    b.OwnsOne("Domain.Entities.CameraSetting", "Camera", b1 =>
+                        {
+                            b1.Property<int>("SettingId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("AE")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("AFMode")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Av")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("DriveMode")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Exposure")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Flash")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("ISO")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Metering")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("PictureStyle")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Quality")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Tv")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("WB")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("SettingId");
+
+                            b1.ToTable("Settings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingId");
+                        });
+
+                    b.OwnsOne("Domain.Entities.PrinterSetting", "Printer", b1 =>
+                        {
+                            b1.Property<int>("SettingId")
+                                .HasColumnType("int");
+
+                            b1.Property<bool>("AutoRotate")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("Borderless")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("ColorCorrection")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("HalfCut")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("PrinterDriverName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("SettingId");
+
+                            b1.ToTable("Settings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingId");
+                        });
+
+                    b.Navigation("Camera")
+                        .IsRequired();
+
+                    b.Navigation("Printer")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.Booths", b =>
                 {
                     b.Navigation("BoothErrors");
@@ -522,6 +652,11 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("Booths");
 
+                    b.Navigation("Frames");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Topic", b =>
+                {
                     b.Navigation("Frames");
                 });
 #pragma warning restore 612, 618

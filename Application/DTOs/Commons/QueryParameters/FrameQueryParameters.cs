@@ -1,3 +1,4 @@
+using Shared;
 using Shared.QueryParameter;
 
 namespace Application.DTOs.Commons;
@@ -5,6 +6,7 @@ namespace Application.DTOs.Commons;
 public class FrameQueryParameters : CommonQueryParameters
 {
     public string? BranchName { get; set; }
+    public LayoutType layoutType { get; set; }
 
     public override GenericQueryParameters ToGenericQueryParameters()
     {

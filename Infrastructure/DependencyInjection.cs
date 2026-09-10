@@ -1,3 +1,4 @@
+using Application.DTOs.Identites;
 using Application.Interfaces;
 using Application.Interfaces.Commons;
 using Application.Services;
@@ -35,7 +36,8 @@ namespace Infrastructure
             services.AddScoped<IPhotoServices, PhotoService>();
             services.AddScoped<IFrameService, FrameService>();
             services.AddScoped<ITopicService, TopicService>();
-            
+            services.AddScoped<ISummeryService, SummeryService>();
+            services.AddScoped<ISettingService, SettingService>();
             return services;
         }
     }

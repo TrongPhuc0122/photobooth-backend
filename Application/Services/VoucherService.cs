@@ -56,7 +56,7 @@ namespace Application.Services
                     StartDate = dto.StartDate,
                     EndDate = dto.EndDate,
                     UsageLimit = dto.UsageLimit,
-                    UsageCount = 0,
+                    UsageCount = dto.UsageCount,
                     Creator = dto.Creator
                 };
                 _repository.Add(voucher);

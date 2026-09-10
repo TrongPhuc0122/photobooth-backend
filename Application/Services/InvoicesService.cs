@@ -7,6 +7,7 @@ using AutoMapper;
 using Domain.Entities;
 using Shared.Results;
 using Shared;
+using System.Linq.Expressions;
 
 namespace Application.Services
 {
@@ -86,9 +87,13 @@ namespace Application.Services
         public ServiceResult<PagedResult<InvoiceDto>> GetAll(InvoiceQueryParameters parameters)
         {
             var genericParams = parameters.ToGenericQueryParameters();
+            Expression<Func<Invoice, bool>>? predicate = parameters.VoucherId.HasValue ? 
+                                            i => i.VoucherId == parameters.VoucherId.Value 
+                                            : null;
+
             string[] searchProperties = {"InvoiceCode"};
             string[] includes = {"Booth", "Voucher"};
-            var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
+            var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProperties, includes);
             var result = pagedEntities.Items.Select(i => new InvoiceDto
             {
                 Infor =

@@ -2,6 +2,9 @@ using API.BackgroundServices;
 using Infrastructure;
 using Shared.Results;
 using Microsoft.Extensions.FileProviders;
+using Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
+using Domain.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 // FE

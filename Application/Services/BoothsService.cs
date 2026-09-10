@@ -8,7 +8,7 @@ using Shared.Results;
 using Shared;
 using Shared.QueryParameter;
 using Application.DTOs.Commons;
-using System.ComponentModel;
+using System.Linq.Expressions;
 
 namespace Application.Services
 {
@@ -117,15 +117,31 @@ namespace Application.Services
                 return ServiceResult<BoothDto>.InternalServerError($"Lỗi tạo booth: {ex.Message}");
             }
         }
-        public ServiceResult<PagedResult<BoothDto>> GetAll(CommonQueryParameters parameters)
+        public ServiceResult<PagedResult<BoothDto>> GetAll(BoothQueryParameters parameters)
         {
             try
             {
-                var genericParams = parameters.ToGenericQueryParameters();
+                var genericParams = new GenericQueryParameters
+                {
+                    Take = parameters.Take,
+                    Index = parameters.Index,
+                    PageSize = parameters.PageSize,
+                    SortBy = parameters.SortBy,
+                    SortDirection = parameters.SortDirection,
+                    Search = parameters.Search
+                };
+                Expression<Func<Booths, bool>>? predicate = null;
+                if(parameters.BranchId.HasValue || parameters.Status.HasValue)
+                {
+                    predicate = b =>
+                        (!parameters.BranchId.HasValue || b.BranchId == parameters.BranchId.Value) &&
+                        (!parameters.Status.HasValue || b.BoothHealth!.Status == parameters.Status);
+                }
+
                 string[] searchProperties = { "BoothName", "BoothIp", "Brand" };
                 string[] includes = {"Branch", "BoothHealth", "BoothResources", "BoothErrors", "Invoices"};
 
-                var pagedEntities = _repository.GetPaged(genericParams, searchProperties, includes);
+                var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProperties, includes);
                 var now = DateTime.UtcNow;
                 var result = pagedEntities.Items.Select(b => new BoothDto
                 {
@@ -136,6 +152,7 @@ namespace Application.Services
                     },
                     BranchId = b.BranchId,
                     BranchName = b.Branch.BranchName,
+                    BranchCode = b.Branch.BranchCode,
                     BoothIp = b.BoothIp,
                     Brand = b.Brand,
                     Status = b.BoothHealth!.Status,
@@ -186,7 +203,8 @@ namespace Application.Services
                         BoothName = booth.BoothName
                     },
                     BranchId = booth.BranchId,
-                    BranchName = booth.Branch?.BranchName ?? string.Empty,
+                    BranchName = booth.Branch.BranchName,
+                    BranchCode = booth.Branch.BranchCode,
                     BoothIp = booth.BoothIp,
                     Brand = booth.Brand,
                     Status = booth.BoothHealth!.Status,

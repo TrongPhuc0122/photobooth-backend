@@ -16,7 +16,7 @@ namespace API.Controllers
             _dashboardService = dashBoardService;
         }
         [HttpGet]
-        public async Task<IActionResult> GetDashBoard([FromQuery] DateTime? From,[FromQuery] DateTime? To, [FromQuery] DashBoardQuery range)
+        public async Task<IActionResult> GetDashBoard([FromQuery] DateTime? From,[FromQuery] DateTime? To, [FromQuery] DashBoardQuery range = DashBoardQuery.Last7Days)
         {
             ServiceResult<DashBoardDto> result;
             switch (range)

@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.DTOs.Commons;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Results;
 
 namespace API.Controllers
 {
@@ -17,9 +18,16 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll([FromQuery] CommonQueryParameters parameters)
+        public IActionResult GetAll([FromQuery] TopicQueryParameters parameters)
         {
             var result = _topicService.GetAll(parameters);
+            return ToActionResult(result);
+        }
+
+        [HttpGet("options")]
+        public IActionResult GetOptions()
+        {
+            var result = _topicService.GetAllOptions();
             return ToActionResult(result);
         }
 
@@ -34,6 +42,20 @@ namespace API.Controllers
         public async Task<IActionResult> Create([FromBody] CreateTopicDto model)
         {
             var result = await _topicService.CreateAsync(model);
+            return ToActionResult(result);
+        }
+        
+        [HttpPut]
+        public async Task<IActionResult> Update([FromRoute] int topicId, [FromBody] CreateTopicDto dto)
+        {
+            var result = await _topicService.UpdateAsync(topicId, dto);
+            return ToActionResult(result);
+        }
+        
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete([FromRoute] int id)
+        {
+            var result = await _topicService.SoftDelete(id);
             return ToActionResult(result);
         }
     }
