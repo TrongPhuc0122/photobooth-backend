@@ -11,5 +11,6 @@ namespace Application.Interfaces
     public interface IFrameService : IGenericService<Frame, FrameDto, CreateFrameDto, int>
     {
         ServiceResult<PagedResult<FrameDto>> GetAll(CommonQueryParameters parameters, LayoutType layout);
+        ServiceResult<IEnumerable<FrameOptionDto>> GetAllOptions();
     }
 }

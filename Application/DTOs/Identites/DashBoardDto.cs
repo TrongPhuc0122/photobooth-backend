@@ -85,5 +85,4 @@ public class CustomRevenuePoint
 {
     public string Label { get; set; } = string.Empty;
     public decimal FinalPrice { get; set; }
-    public int TransactionCount { get; set; }
 }

@@ -12,8 +12,6 @@ public class Frame : BaseEntity
     public string? BranchCode { get; set; }
     public string? Branchname { get; set; } = string.Empty;
     public required string FrameName { get; set; } = string.Empty;
-    public int TopicId { get; set; }
-
     public required string Subject { get; set; } = string.Empty;
     public required string Background { get; set; } = string.Empty;
     public required string Overlay { get; set; } = string.Empty;
@@ -22,6 +20,5 @@ public class Frame : BaseEntity
 
     [ForeignKey("BranchId")]
     public virtual Branch? Branch { get; set; }
-    [ForeignKey("TopicId")]
-    public virtual Topic? Topic { get; set; }
+    public ICollection<TopicsFrames> TopicsFrames { get; set; } = new List<TopicsFrames>();
 }

@@ -13,13 +13,15 @@ using Shared.Results;
 namespace Application.Services;
 public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>, ITopicService
 {
+    private readonly IGenericRepository<Frame, int> _frameRepository;
     public TopicService(
         IGenericRepository<Topic, int> repository,
+        IGenericRepository<Frame, int> frameRepository,
         IMapper mapper,
         IUnitOfWork unitOfWork
-    ) : base(repository, mapper, unitOfWork)
+    ) : base(repository,  mapper, unitOfWork)
     {
-        
+        _frameRepository = frameRepository;    
     }
 
     public async override Task<ServiceResult<TopicDto>> CreateAsync(CreateTopicDto dto)
@@ -31,6 +33,11 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
         }
         catch (KeyNotFoundException)
         {
+            var frame = _frameRepository.GetMulti(f => dto.FrameIds.Contains(f.FrameId));
+            if(frame.Count() != dto.FrameIds.Count())
+            {
+                return ServiceResult<TopicDto>.NotFound($"Không tồn tại Frame với Id: {string.Join(", ", dto.FrameIds)}");
+            }
             var topic = new Topic
             {
                 TopicName = dto.TopicName,
@@ -83,7 +90,7 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
                 predicate = t => t.BranchCode == parameters.BranchCode;
 
             string[] searchProperties = { "TopicName", "BranchCode", "layoutType" };
-            string[] includes = { "Frames" };
+            string[] includes = { "TopicsFrames.Frame" };
             var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProperties, includes);
 
             var result = pagedEntities.Items.Select(_mapper.Map<Topic, TopicDto>);
@@ -107,7 +114,8 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
         var topics = _repository.GetAll();
         var result = topics.Select(t => new TopicOptionDto
         {
-            TopicName = t.TopicName
+            TopicName = t.TopicName,
+            TopicId = t.TopicId,
         });
         return ServiceResult<IEnumerable<TopicOptionDto>>.Success(result);
     }

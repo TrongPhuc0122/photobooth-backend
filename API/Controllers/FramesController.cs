@@ -38,7 +38,7 @@ namespace API.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Updare([FromRoute] int frameId, CreateFrameDto dto)
+        public async Task<IActionResult> Update([FromRoute] int frameId, CreateFrameDto dto)
         {
             var result = await _frameService.UpdateAsync(frameId, dto);
             return ToActionResult(result);
@@ -50,5 +50,11 @@ namespace API.Controllers
             return ToActionResult(result);
         }
 
+        [HttpGet("options")]
+        public IActionResult GetOptions()
+        {
+            var result = _frameService.GetAllOptions();
+            return ToActionResult(result);
+        }
     }
 }

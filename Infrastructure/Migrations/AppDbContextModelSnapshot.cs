@@ -134,9 +134,21 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("SettingHistoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SettingId")
+                        .HasColumnType("int");
+
                     b.HasKey("BoothId");
 
                     b.HasIndex("BranchId");
+
+                    b.HasIndex("SettingHistoryId")
+                        .IsUnique()
+                        .HasFilter("[SettingHistoryId] IS NOT NULL");
+
+                    b.HasIndex("SettingId");
 
                     b.ToTable("Booths");
                 });
@@ -232,14 +244,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TopicId")
-                        .HasColumnType("int");
-
                     b.HasKey("FrameId");
 
                     b.HasIndex("BranchId");
-
-                    b.HasIndex("TopicId");
 
                     b.ToTable("Frames");
                 });
@@ -355,12 +362,37 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SettingId"));
 
+                    b.Property<bool>("SettingStatus")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("SettingTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("SettingId");
 
                     b.ToTable("Settings");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SettingHistory", b =>
+                {
+                    b.Property<int>("SettingHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SettingHistoryId"));
+
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CalledAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("SettingHistoryId");
+
+                    b.ToTable("SettingHistories");
                 });
 
             modelBuilder.Entity("Domain.Entities.Topic", b =>
@@ -393,6 +425,21 @@ namespace Infrastructure.Migrations
                     b.HasKey("TopicId");
 
                     b.ToTable("Topics");
+                });
+
+            modelBuilder.Entity("Domain.Entities.TopicsFrames", b =>
+                {
+                    b.Property<int>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FrameId")
+                        .HasColumnType("int");
+
+                    b.HasKey("TopicId", "FrameId");
+
+                    b.HasIndex("FrameId");
+
+                    b.ToTable("TopicsFrames");
                 });
 
             modelBuilder.Entity("Domain.Entities.Voucher", b =>
@@ -488,7 +535,19 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.SettingHistory", "SettingHistory")
+                        .WithOne("Booth")
+                        .HasForeignKey("Domain.Entities.Booths", "SettingHistoryId");
+
+                    b.HasOne("Domain.Entities.Setting", "Setting")
+                        .WithMany("Booths")
+                        .HasForeignKey("SettingId");
+
                     b.Navigation("Branch");
+
+                    b.Navigation("Setting");
+
+                    b.Navigation("SettingHistory");
                 });
 
             modelBuilder.Entity("Domain.Entities.Frame", b =>
@@ -497,15 +556,7 @@ namespace Infrastructure.Migrations
                         .WithMany("Frames")
                         .HasForeignKey("BranchId");
 
-                    b.HasOne("Domain.Entities.Topic", "Topic")
-                        .WithMany("Frames")
-                        .HasForeignKey("TopicId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Branch");
-
-                    b.Navigation("Topic");
                 });
 
             modelBuilder.Entity("Domain.Entities.Invoice", b =>
@@ -628,11 +679,455 @@ namespace Infrastructure.Migrations
                                 .HasForeignKey("SettingId");
                         });
 
+                    b.OwnsOne("Domain.Entities.SystemSetting", "System", b1 =>
+                        {
+                            b1.Property<int>("SettingId")
+                                .HasColumnType("int");
+
+                            b1.HasKey("SettingId");
+
+                            b1.ToTable("Settings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingId");
+
+                            b1.OwnsOne("Domain.Entities.AudioSetting", "Audio", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<bool>("BackgroundMusic")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<bool>("PrintBackgroundMusic")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<bool>("VoiceGuide")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<int>("Volume")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingId");
+
+                                    b2.ToTable("Settings");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.CaptureSetting", "Capture", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("AutoCaptureCountdown")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("EvfGcIntervalSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("EvfOffMs")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("MaxThumbnails")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ShotsFor4Cut")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ShotsFor8Cut")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("TotalShots")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingId");
+
+                                    b2.ToTable("Settings");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.DefaultSetting", "Default", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<string>("Country")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Language")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("RunMode")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Server")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("ServerAddress")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.HasKey("SystemSettingSettingId");
+
+                                    b2.ToTable("Settings");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.TimerSetting", "Timer", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ErrorScreenSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PaymentMethodSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PaymentWaitSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PreviewSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PrintWaitSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectFilterSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectPhotoSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectScreenSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectVoucherSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("UnitPricePaymentSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingId");
+
+                                    b2.ToTable("Settings");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingId");
+                                });
+
+                            b1.Navigation("Audio")
+                                .IsRequired();
+
+                            b1.Navigation("Capture")
+                                .IsRequired();
+
+                            b1.Navigation("Default")
+                                .IsRequired();
+
+                            b1.Navigation("Timer")
+                                .IsRequired();
+                        });
+
                     b.Navigation("Camera")
                         .IsRequired();
 
                     b.Navigation("Printer")
                         .IsRequired();
+
+                    b.Navigation("System")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.SettingHistory", b =>
+                {
+                    b.OwnsOne("Domain.Entities.CameraSetting", "Camera", b1 =>
+                        {
+                            b1.Property<int>("SettingHistoryId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("AE")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("AFMode")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Av")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("DriveMode")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Exposure")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Flash")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("ISO")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Metering")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("PictureStyle")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Quality")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Tv")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("WB")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("SettingHistoryId");
+
+                            b1.ToTable("SettingHistories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingHistoryId");
+                        });
+
+                    b.OwnsOne("Domain.Entities.PrinterSetting", "Printer", b1 =>
+                        {
+                            b1.Property<int>("SettingHistoryId")
+                                .HasColumnType("int");
+
+                            b1.Property<bool>("AutoRotate")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("Borderless")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("ColorCorrection")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("HalfCut")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("PrinterDriverName")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("SettingHistoryId");
+
+                            b1.ToTable("SettingHistories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingHistoryId");
+                        });
+
+                    b.OwnsOne("Domain.Entities.SystemSetting", "System", b1 =>
+                        {
+                            b1.Property<int>("SettingHistoryId")
+                                .HasColumnType("int");
+
+                            b1.HasKey("SettingHistoryId");
+
+                            b1.ToTable("SettingHistories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SettingHistoryId");
+
+                            b1.OwnsOne("Domain.Entities.AudioSetting", "Audio", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingHistoryId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<bool>("BackgroundMusic")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<bool>("PrintBackgroundMusic")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<bool>("VoiceGuide")
+                                        .HasColumnType("bit");
+
+                                    b2.Property<int>("Volume")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingHistoryId");
+
+                                    b2.ToTable("SettingHistories");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingHistoryId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.CaptureSetting", "Capture", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingHistoryId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("AutoCaptureCountdown")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("EvfGcIntervalSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("EvfOffMs")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("MaxThumbnails")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ShotsFor4Cut")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ShotsFor8Cut")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("TotalShots")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingHistoryId");
+
+                                    b2.ToTable("SettingHistories");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingHistoryId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.DefaultSetting", "Default", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingHistoryId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<string>("Country")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Language")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("RunMode")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("Server")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<string>("ServerAddress")
+                                        .IsRequired()
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.HasKey("SystemSettingSettingHistoryId");
+
+                                    b2.ToTable("SettingHistories");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingHistoryId");
+                                });
+
+                            b1.OwnsOne("Domain.Entities.TimerSetting", "Timer", b2 =>
+                                {
+                                    b2.Property<int>("SystemSettingSettingHistoryId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("ErrorScreenSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PaymentMethodSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PaymentWaitSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PreviewSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("PrintWaitSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectFilterSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectPhotoSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectScreenSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("SelectVoucherSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.Property<int>("UnitPricePaymentSeconds")
+                                        .HasColumnType("int");
+
+                                    b2.HasKey("SystemSettingSettingHistoryId");
+
+                                    b2.ToTable("SettingHistories");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("SystemSettingSettingHistoryId");
+                                });
+
+                            b1.Navigation("Audio")
+                                .IsRequired();
+
+                            b1.Navigation("Capture")
+                                .IsRequired();
+
+                            b1.Navigation("Default")
+                                .IsRequired();
+
+                            b1.Navigation("Timer")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("Camera")
+                        .IsRequired();
+
+                    b.Navigation("Printer")
+                        .IsRequired();
+
+                    b.Navigation("System")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.TopicsFrames", b =>
+                {
+                    b.HasOne("Domain.Entities.Frame", "Frame")
+                        .WithMany("TopicsFrames")
+                        .HasForeignKey("FrameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Topic", "Topic")
+                        .WithMany("TopicsFrames")
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Frame");
+
+                    b.Navigation("Topic");
                 });
 
             modelBuilder.Entity("Domain.Entities.Booths", b =>
@@ -655,9 +1150,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Frames");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Frame", b =>
+                {
+                    b.Navigation("TopicsFrames");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Setting", b =>
+                {
+                    b.Navigation("Booths");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SettingHistory", b =>
+                {
+                    b.Navigation("Booth")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.Topic", b =>
                 {
-                    b.Navigation("Frames");
+                    b.Navigation("TopicsFrames");
                 });
 #pragma warning restore 612, 618
         }

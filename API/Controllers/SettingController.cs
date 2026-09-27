@@ -9,15 +9,30 @@ namespace API.Controllers
     public class SettingController : BaseController
     {
         private readonly ISettingService _service;
+
         public SettingController(ISettingService service)
         {
             _service = service;
         }
 
         [HttpPost]
-        public IActionResult Config([FromBody] CreateSettingDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateSettingDto dto)
         {
-            var result = _service.Configuration(dto);
+            var result = await _service.CreateAsync(dto);
+            return ToActionResult(result);
+        }
+
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var result = _service.GetAll();
+            return ToActionResult(result);
+        }
+
+        [HttpGet("{id:int}")]
+        public IActionResult GetById(int id)
+        {
+            var result = _service.GetById(id);
             return ToActionResult(result);
         }
     }

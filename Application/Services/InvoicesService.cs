@@ -87,9 +87,15 @@ namespace Application.Services
         public ServiceResult<PagedResult<InvoiceDto>> GetAll(InvoiceQueryParameters parameters)
         {
             var genericParams = parameters.ToGenericQueryParameters();
-            Expression<Func<Invoice, bool>>? predicate = parameters.VoucherId.HasValue ? 
-                                            i => i.VoucherId == parameters.VoucherId.Value 
-                                            : null;
+            Expression<Func<Invoice, bool>>? predicate = null;
+            if (parameters.BoothId.HasValue || parameters.VoucherId.HasValue || parameters.FromDate.HasValue || parameters.ToDate.HasValue)
+            {
+                predicate = i =>
+                    (!parameters.BoothId.HasValue || i.BoothId == parameters.BoothId.Value) &&
+                    (!parameters.VoucherId.HasValue || i.VoucherId == parameters.VoucherId.Value) &&
+                    (!parameters.FromDate.HasValue || i.CreatedAt >= parameters.FromDate.Value) &&
+                    (!parameters.ToDate.HasValue || i.CreatedAt <= parameters.ToDate.Value);
+            }
 
             string[] searchProperties = {"InvoiceCode"};
             string[] includes = {"Booth", "Voucher"};
@@ -100,11 +106,12 @@ namespace Application.Services
                 {
                     Price = i.Price,
                     DiscountPercent = i.Voucher != null ? i.Voucher.DiscountPercent * 100.0f : 0,
-                    FinalPrice = i.FinalPrice
+                    FinalPrice = i.FinalPrice,
+                    InvoiceId = i.InvoiceId,
                 },
                 VoucherCode = i.Voucher?.VoucherCode,
                 InvoiceCode = i.InvoiceCode,
-                CreatedAt = i.CreatedAt
+                CreatedAt = i.CreatedAt,
             });
             var pagedResult = new PagedResult<InvoiceDto>(
                 result,

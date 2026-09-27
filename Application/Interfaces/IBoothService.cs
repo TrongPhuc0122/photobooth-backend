@@ -3,6 +3,7 @@ using Application.Interfaces.Commons;
 using Application.DTOs.Commons;
 using Domain.Entities;
 using Shared.Results;
+using Application.DTOs.Identites;
 
 namespace Application.Interfaces
 {
@@ -10,12 +11,16 @@ namespace Application.Interfaces
     {
         ServiceResult<PagedResult<BoothDto>> GetAll(BoothQueryParameters parameters);
         Task<ServiceResult> CreateError(Guid boothId, CreateBoothErrorDto dto);
-        ServiceResult<IEnumerable<BoothErrorDto>> GetActiveErrors(Guid boothId);
-        ServiceResult<IEnumerable<BoothErrorDto>> GetAllErrors(Guid boothId);
+        ServiceResult<PagedResult<BoothErrorDto>> GetActiveErrors(Guid boothId, CommonQueryParameters parameters);
+        ServiceResult<PagedResult<BoothErrorDto>> GetAllErrors(Guid boothId, CommonQueryParameters parameters);
         Task<ServiceResult> FixError(Guid boothId, string errorCode);
         Task<ServiceResult> UpdateResources (Guid boothId, int? paper, int? ribbon);
         Task<ServiceResult> SetBoothStorage (Guid boothId, int? paperMax, int? ribbonMax);
         Task<ServiceResult> GetHeartBeat (Guid boothId);
         Task<ServiceResult> SetStatus();
+        Task<ServiceResult> ReportCurrentSetting(Guid boothId, CreateSettingHistoryDto dto);
+        ServiceResult<BoothSettingDto> GetSetting(Guid boothId);
+        ServiceResult<PagedResult<SettingHistoryDto>> GetSettingHistory(Guid boothId, CommonQueryParameters parameters);
+        ServiceResult<IEnumerable<BoothOptionDto>> GetAllOptions();
     }
 }

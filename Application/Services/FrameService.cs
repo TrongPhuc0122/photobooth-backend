@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Application.DTOs;
 using Application.DTOs.Commons;
 using Application.DTOs.Identites;
 using Application.Interfaces;
@@ -50,14 +51,10 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             }
         }
 
-        Topic topic;
-        try
+        var topics = _topicRepository.GetMulti(t => dto.TopicIds.Contains(t.TopicId));
+        if (topics.Count() != dto.TopicIds.Count())
         {
-            topic = _topicRepository.GetSingleByCondition(t => t.TopicName == dto.TopicName);
-        }
-        catch (KeyNotFoundException)
-        {
-            return ServiceResult<FrameDto>.NotFound($"Không tồn tại Topic: {dto.TopicName}");
+            return ServiceResult<FrameDto>.NotFound($"Không tồn tại Topic với Id: {string.Join(", ", dto.TopicIds)}");
         }
 
         byte[] subjectBytes, backgroundBytes, overlayBytes;
@@ -88,11 +85,11 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchCode = dto.BranchCode,
                 Branchname = dto.BranchName,
                 FrameName = dto.FrameName,
-                TopicId = topic.TopicId,
                 Subject = string.Empty,
                 Background = string.Empty,
                 Overlay = string.Empty,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                TopicsFrames = topics.Select(t => new TopicsFrames { TopicId = t.TopicId }).ToList()
             };
 
             _repository.Add(frame);
@@ -114,9 +111,12 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchCode = frame.BranchCode,
                 BranchName = frame.Branchname,
                 FrameName = frame.FrameName,
-                TopicId = frame.TopicId,
-                TopicName = topic.TopicName,
-                LayoutType = topic.layoutType,
+                Topics = topics.Select(t => new FrameTopicDto
+                {
+                    TopicId = t.TopicId,
+                    TopicName = t.TopicName,
+                    LayoutType = t.layoutType
+                }).ToList(),
                 Subject = frame.Subject,
                 Background = frame.Background,
                 Overlay = frame.Overlay,
@@ -135,13 +135,13 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
     {
         try
         {
-            string[] includes = { "Branch", "Topic" };
+            string[] includes = { "Branch", "TopicsFrames.Topic" };
 
             var genericParams = parameters.ToGenericQueryParameters();
 
             Expression<Func<Frame, bool>>? predicate = layout == LayoutType.All
                 ? null
-                : f => f.Topic != null && f.Topic.layoutType == layout;
+                : f => f.TopicsFrames.Any(tf => tf.Topic.layoutType == layout);
 
             var pagedFrames = _repository.GetPaged(predicate, genericParams, null, includes);
             var result = pagedFrames.Items.Select(f => new FrameDto
@@ -150,9 +150,12 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchCode = f.BranchCode,
                 BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
                 FrameName = f.FrameName,
-                TopicId = f.TopicId,
-                TopicName = f.Topic?.TopicName ?? string.Empty,
-                LayoutType = f.Topic?.layoutType ?? default,
+                Topics = f.TopicsFrames.Select(tf => new FrameTopicDto
+                {
+                    TopicId = tf.TopicId,
+                    TopicName = tf.Topic.TopicName,
+                    LayoutType = tf.Topic.layoutType
+                }).ToList(),
                 Subject = f.Subject,
                 Background = f.Background,
                 Overlay = f.Overlay,
@@ -179,7 +182,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         Frame frame;
         try
         {
-            string[] includes = { "Branch", "Topic" };
+            string[] includes = { "Branch", "TopicsFrames.Topic" };
             frame = _repository.GetSingleByCondition(
                 f => f.FrameId == id,
                 includes
@@ -197,9 +200,12 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 BranchCode = frame.BranchCode,
                 BranchName = frame.Branch?.BranchName ?? frame.Branchname ?? string.Empty,
                 FrameName = frame.FrameName,
-                TopicId = frame.TopicId,
-                TopicName = frame.Topic?.TopicName ?? string.Empty,
-                LayoutType = frame.Topic?.layoutType ?? default,
+                Topics = frame.TopicsFrames.Select(tf => new FrameTopicDto
+                {
+                    TopicId = tf.TopicId,
+                    TopicName = tf.Topic.TopicName,
+                    LayoutType = tf.Topic.layoutType
+                }).ToList(),
                 Subject = frame.Subject,
                 Background = frame.Background,
                 Overlay = frame.Overlay,
@@ -262,5 +268,16 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         await File.WriteAllBytesAsync(filePath, imageBytes);
 
         return $"{baseUrl}/Frame/{frameId}/{fileName}";
+    }
+
+    public ServiceResult<IEnumerable<FrameOptionDto>> GetAllOptions()
+    {
+        var frames = _repository.GetAll();
+        var result = frames.Select(f => new FrameOptionDto
+        {
+            FrameId = f.FrameId,
+            FrameName = f.FrameName,
+        });
+        return ServiceResult<IEnumerable<FrameOptionDto>>.Success(result);
     }
 }

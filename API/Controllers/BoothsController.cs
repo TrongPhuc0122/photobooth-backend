@@ -9,6 +9,13 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class BoothsController : BaseController
     {
+        [HttpGet("options")]
+        public IActionResult GetAllOptions()
+        {
+            var result = _boothsService.GetAllOptions();
+            return ToActionResult(result);
+        }
+        
         private readonly IBoothService _boothsService;
 
         public BoothsController(IBoothService boothsService)
@@ -61,16 +68,16 @@ namespace API.Controllers
         }
 
         [HttpGet("{boothId:Guid}/errors")]
-        public IActionResult GetErrors([FromRoute] Guid boothId, [FromQuery] bool activeOnly = false)
+        public IActionResult GetErrors([FromRoute] Guid boothId, [FromQuery] CommonQueryParameters parameters, [FromQuery] bool activeOnly = false)
         {
             if (activeOnly)
             {
-                var result = _boothsService.GetActiveErrors(boothId);
+                var result = _boothsService.GetActiveErrors(boothId, parameters);
                 return ToActionResult(result);
             }
             else
             {
-                var result = _boothsService.GetAllErrors(boothId);
+                var result = _boothsService.GetAllErrors(boothId, parameters);
                 return ToActionResult(result);
             }
         }
@@ -104,6 +111,29 @@ namespace API.Controllers
         public async Task<IActionResult> GetHeartBeat (Guid boothId)
         {
             var result = await _boothsService.GetHeartBeat(boothId);
+            return ToActionResult(result);
+        }
+        #endregion
+
+        #region BoothSetting
+        [HttpGet("{boothId:Guid}/setting")]
+        public IActionResult GetSetting(Guid boothId)
+        {
+            var result = _boothsService.GetSetting(boothId);
+            return ToActionResult(result);
+        }
+
+        [HttpPost("{boothId:Guid}/setting")]
+        public async Task<IActionResult> ReportCurrentSetting(Guid boothId, [FromBody] CreateSettingHistoryDto dto)
+        {
+            var result = await _boothsService.ReportCurrentSetting(boothId, dto);
+            return ToActionResult(result);
+        }
+
+        [HttpGet("{boothId:Guid}/setting-history")]
+        public IActionResult GetSettingHistory(Guid boothId, [FromQuery] CommonQueryParameters parameters)
+        {
+            var result = _boothsService.GetSettingHistory(boothId, parameters);
             return ToActionResult(result);
         }
         #endregion

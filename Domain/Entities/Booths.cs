@@ -12,11 +12,17 @@ namespace Domain.Entities
         public string BoothName{ get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public int BranchId{ get; set; }
+        public int? SettingId { get; set; }
+        public int? SettingHistoryId { get; set; }
         public string? Creator { get; set; }
         public DateTime CreatedAt{ get; set; } = DateTime.UtcNow;
 
         [ForeignKey("BranchId")]
         public virtual Branch Branch{ get; set; } = null!;
+        [ForeignKey("SettingId")]
+        public virtual Setting? Setting { get; set; }
+        [ForeignKey("SettingHistoryId")]
+        public virtual SettingHistory? SettingHistory { get; set; }
 
         public virtual BoothHealth? BoothHealth { get; set; }
 

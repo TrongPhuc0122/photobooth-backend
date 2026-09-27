@@ -7,8 +7,8 @@ public class InvoiceQueryParameters : CommonQueryParameters
 {
     public Guid? BoothId { get; set; }
     public string? BranchCode { get; set; }
-    public DateTime? From { get; set; }
-    public DateTime? To { get; set; }
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
     public PaymentMethodStatus? PaymentMethod { get; set; }
     public int? VoucherId { get; set; }
     public override GenericQueryParameters ToGenericQueryParameters()
@@ -18,8 +18,8 @@ public class InvoiceQueryParameters : CommonQueryParameters
         if (BranchId.HasValue)      iqp.AddFilter("Booth.BranchId", "==", BranchId.Value);
         if (BranchCode != null)     iqp.AddFilter("Booth.Branch.BranchCode", "==", BranchCode);
         if (BoothId.HasValue) iqp.AddFilter("BoothId", "==", BoothId);
-        if (From.HasValue) iqp.AddFilter("CreatedAt", ">=", From.Value.Date);
-        if (To.HasValue) iqp.AddFilter("CreatedAt", "<=", To.Value.Date.AddDays(1).AddTicks(-1));
+        if (FromDate.HasValue) iqp.AddFilter("CreatedAt", ">=", FromDate.Value.Date);
+        if (ToDate.HasValue) iqp.AddFilter("CreatedAt", "<=", ToDate.Value.Date.AddDays(1).AddTicks(-1));
         if (PaymentMethod.HasValue) iqp.AddFilter("PaymentMethod", "==", PaymentMethod);
         return iqp;
     }

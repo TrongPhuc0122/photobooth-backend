@@ -7,5 +7,5 @@ using Shared.Results;
 namespace Application.Interfaces;
 public interface ISettingService : IGenericService<Setting, SettingDto, CreateSettingDto, int>
 {
-    ServiceResult<SettingDto> Configuration(CreateSettingDto dto);
+    
 }

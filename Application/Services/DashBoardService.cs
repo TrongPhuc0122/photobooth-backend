@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using Application.DTOs.Identites;
 using Application.DTOs.Identites.Booths;
 using Application.Interfaces;
 using Application.Interfaces.Commons;
 using Domain.Entities;
+using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using Shared;
 using Shared.Results;
 
@@ -27,131 +29,304 @@ public class DashBoardService : IDashBoardService
     }
 
     // API
-    public async Task<ServiceResult<DashBoardDto>> Get7DaysDashboard()
+    #region Today Summary
+    public async Task<ServiceResult<TodayRevenueDto>> GetTodaySummary()
     {
         DateTime now = DateTime.UtcNow;
-        var From = now.Date.AddDays(-7);
-        var invoices = await LoadInvoices(From, now);
-        var booths = await LoadBooths();
-        
-        var dto = await ProcessData(invoices, booths, From, now);
-        dto.Last7Days = Enumerable.Range(0,7)
-                        .Select(offset => From.Date.AddDays(offset))
-                        .Select(date => new DailyRevenuePoint
-                        {
-                            Date = date,
-                            FinalPrice = invoices.Where(i => i.CreatedAt.Date == date).Sum(i => i.FinalPrice),
-                            TransactionCount = invoices.Count()
-                        })
-                        .ToList();
-        return ServiceResult<DashBoardDto>.Success(dto);
-    }
-    public async Task<ServiceResult<DashBoardDto>> Get6MonthsDashboard()
-    {
-        DateTime now = DateTime.UtcNow;
-        var From = now.Date.AddMonths(-6);
-        var invoices = await LoadInvoices(From, now);
-        var booths = await LoadBooths();
+        var invoices = await LoadInvoices(now.Date, now);
+        var yesterday = await LoadInvoices(now.Date.AddDays(-1), now.Date);
 
-        var totalRevenue = invoices.Sum(i => i.FinalPrice);
-        var dataPoints = Enumerable.Range(0,6)
-                        .Select(offset => From.AddMonths(offset ))
-                        .Select(month => new MonthlyRevenuePoint
-                        {
-                            Month = month.Month,
-                            Year = month.Year,
-                            FinalPrice = invoices
-                                            .Where(i => i.CreatedAt.Year == month.Year 
-                                                    && i.CreatedAt.Month == month.Month)
-                                            .Sum(i => i.FinalPrice)
-                        })
-                        .ToList();
-        var lastMonthRevenue = invoices
-                                    .Where(i => i.CreatedAt >= new DateTime(now.Year, now.Month, 1).AddMonths(-1)
-                                            && i.CreatedAt < new DateTime(now.Year, now.Month, 1))
-                                    .Sum(i => i.FinalPrice);
-        var thisMonthRevenue = invoices
-                                    .Where(i => i.CreatedAt >= new DateTime(now.Year, now.Month, 1)
-                                            && i.CreatedAt <= now)
-                                    .Sum(i => i.FinalPrice);
-
-        var dto = await ProcessData(invoices, booths, From, now);
-        dto.Last6Months = new MonthlyRevenueDto
+        var TodayRevenue = invoices.Sum(i => i.FinalPrice);
+        var YesterdayRevenue = yesterday.Sum(i => i.FinalPrice);
+        var result = new TodayRevenueDto
         {
-            DataPoints = dataPoints,
-            Total6Months = totalRevenue,
-            AveragePerMonth = totalRevenue / 6m,
-            CurrentMonthRevenue = thisMonthRevenue,
-            CompareWithLastMonth = lastMonthRevenue > 0 
-                                    ? (thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100m
-                                    : 0m
+            FinalPrice = TodayRevenue,
+            TransactionCount = invoices.Count(),
+            YesterdayFinalPrice = YesterdayRevenue,
+            ComparePercent = TodayRevenue == 0 ?  
+                            0.0f
+                            : (float)(TodayRevenue - YesterdayRevenue) / (float)(TodayRevenue) * 100.0f
         };
-        return ServiceResult<DashBoardDto>.Success(dto);
+        return ServiceResult<TodayRevenueDto>.Success(result);
     }
-    public async Task<ServiceResult<DashBoardDto>> GetDashboard(DateTime From, DateTime To)
+    #endregion
+
+    #region  Line Chart 
+    public async Task<ServiceResult<List<DailyRevenuePoint>>> Get7DaysDashboard()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddDays(-7), now);
+        var result = GroupRevenue(
+            invoices,
+            i => i.CreatedAt.Date,
+            g => new DailyRevenuePoint
+            {
+                Date = g.Key,
+                FinalPrice = g.Sum(i =>i.FinalPrice),
+                TransactionCount = g.Count()
+            }
+        );
+        return ServiceResult<List<DailyRevenuePoint>>.Success(result);
+    }
+
+    public async Task<ServiceResult<MonthlyRevenueDto>> Get6MonthsDashboard()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddMonths(-6), now);
+        var monthlyResult = GroupRevenue(
+            invoices,
+            i => new DateTime(i.CreatedAt.Year, i.CreatedAt.Month, 1),
+            g => new MonthlyRevenuePoint
+            {
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                FinalPrice = g.Sum(i => i.FinalPrice)
+            }
+        );
+        decimal totalRevenue = invoices.Sum(i => i.FinalPrice);
+        
+        DateTime startOfThisMonth = new DateTime(now.Year, now.Month, 1);
+        DateTime startOfLastMonth = startOfThisMonth.AddMonths(-1);
+
+        decimal totalRevenueLastMonth = invoices
+            .Where(i => i.CreatedAt >= startOfLastMonth && i.CreatedAt < startOfThisMonth)
+            .Sum(i => i.FinalPrice);
+            
+        decimal totalRevenueThisMonth = invoices
+            .Where(i => i.CreatedAt.Month == now.Month && i.CreatedAt.Year == now.Year)
+            .Sum(i => i.FinalPrice);
+        
+        var result = new MonthlyRevenueDto
+        {
+            DataPoints = monthlyResult,
+            Total6Months = totalRevenue,
+            AveragePerMonth = totalRevenue/(decimal)6,
+            CompareWithLastMonth = totalRevenueLastMonth == 0 ?
+                                    (decimal)0
+                                    : (totalRevenueThisMonth - totalRevenueLastMonth)/totalRevenueLastMonth * (decimal)100
+        };
+        return ServiceResult<MonthlyRevenueDto>.Success(result);
+    }
+
+    public async Task<ServiceResult<CustomRevenueDto>> GetDashboard(DateTime From, DateTime To)
     {
         var invoices = await LoadInvoices(From, To);
-        var booths = await LoadBooths();
-
-        var totalRevenue = invoices.Sum(i => i.FinalPrice);
-
         var totalDays = (To - From).TotalDays;
         string granularity = totalDays <= 31 ? "Day"
-                            : totalDays <= 730 ? "Month" 
+                            : totalDays <= 730 ? "Month"
                             : "Year";
-        List<CustomRevenuePoint> dataPoints;
+
+        decimal totalRevenue = invoices.Sum(i => i.FinalPrice);
+        int transactionCount = invoices.Count();
 
         switch (granularity)
         {
             case "Day":
-                dataPoints = invoices
-                                .GroupBy(i => i.CreatedAt.Date)
-                                .OrderBy(g => g.Key)
-                                .Select(g => new CustomRevenuePoint
-                                {
-                                    Label = g.Key.ToString("yyyy-MM-dd"),
-                                    FinalPrice = g.Sum(i => i.FinalPrice),
-                                    TransactionCount = g.Count()
-                                })        
-                                .ToList();
-                break;
+                {
+                    var routineResult = GroupRevenue(
+                        invoices,
+                        i => i.CreatedAt.Date,
+                        g => new CustomRevenuePoint
+                        {
+                            Label = g.Key.ToString("yyyy-MM-dd"),
+                            FinalPrice = g.Sum(i => i.FinalPrice)
+                        }
+                    );
+                    var result = new CustomRevenueDto
+                    {
+                        Granularity = granularity,
+                        DataPoints = routineResult,
+                        TotalRevenue = totalRevenue,
+                        TransactionCount = transactionCount,
+                        AveragePerPeriod = totalRevenue / (decimal)totalDays
+                    };
+                    return ServiceResult<CustomRevenueDto>.Success(result);
+                }
             case "Month":
-                dataPoints = invoices
-                                .GroupBy(i => new { i.CreatedAt.Year, i.CreatedAt.Month })
-                                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
-                                .Select(g => new CustomRevenuePoint
-                                {
-                                    Label = $"{g.Key.Month:D2}/{g.Key.Year}",
-                                    FinalPrice = g.Sum(i => i.FinalPrice),
-                                    TransactionCount = g.Count()
-                                })        
-                                .ToList();
-                break;
-            default:
-                dataPoints = invoices      
-                                .GroupBy(i => i.CreatedAt.Year)
-                                .OrderBy(g => g.Key)
-                                .Select(g => new CustomRevenuePoint
-                                {
-                                    Label = g.Key.ToString(),
-                                    FinalPrice = g.Sum(i => i.FinalPrice),
-                                    TransactionCount = g.Count()
-                                })
-                                .ToList();
-                break;
+                {
+                    int totalMonths = (To.Year - From.Year) * 12 + (To.Month - From.Month);
+                    var monthlyResult = GroupRevenue(
+                        invoices,
+                        i => new DateTime(i.CreatedAt.Year, i.CreatedAt.Month, 1),
+                        g => new CustomRevenuePoint
+                        {
+                            Label = $"{g.Key.Month:D2}/{g.Key.Year}",
+                            FinalPrice = g.Sum(i => i.FinalPrice)
+                        }
+                    );
+                    var result = new CustomRevenueDto
+                    {
+                        Granularity = granularity,
+                        DataPoints = monthlyResult,
+                        TotalRevenue = totalRevenue,
+                        AveragePerPeriod = totalRevenue/(decimal)totalMonths
+                    };
+                    return ServiceResult<CustomRevenueDto>.Success(result);
+                }
+            case "Year":
+                {
+                    var yearlyResult = GroupRevenue(
+                        invoices,
+                        i => i.CreatedAt.Year,
+                        g => new CustomRevenuePoint
+                        {
+                            Label = g.Key.ToString(),
+                            FinalPrice = g.Sum(i => i.FinalPrice)
+                        }
+                    );
+                    var result = new CustomRevenueDto
+                    {
+                        Granularity = granularity,
+                        DataPoints = yearlyResult,
+                        TotalRevenue = totalRevenue,
+                        AveragePerPeriod = yearlyResult.Count > 0 ? totalRevenue / yearlyResult.Count : 0m
+                    };
+                    return ServiceResult<CustomRevenueDto>.Success(result);
+                }
+            default: break;
         }
-        var dto = await ProcessData(invoices, booths, From, To);
-        dto.Custom = new CustomRevenueDto
-        {
-            Granularity = granularity,
-            DataPoints = dataPoints,
-            TotalRevenue = totalRevenue,
-            TransactionCount = invoices.Count(),
-            AveragePerPeriod = dataPoints.Count > 0 ? totalRevenue / dataPoints.Count : 0m
-        };
-        return ServiceResult<DashBoardDto>.Success(dto);
+        return ServiceResult<CustomRevenueDto>.InternalServerError("Fail to load Dashboard");
     }
 
+    #endregion
+
+    #region Bar Chart 
+    public async Task<ServiceResult<List<BoothRevenueDto>>> GetTopBoothsIn7Days()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddDays(-7), now);
+        var booths = await LoadBooths();
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+
+        var byBooths = GroupRevenue(
+            invoices,
+            i => i.BoothId,
+            g => new BoothRevenueDto
+            {
+                BoothId = g.Key,
+                BoothName = booths.FirstOrDefault(b => b.BoothId == g.Key)?.BoothName ?? "",
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        ).ToList();
+        var result = byBooths
+            .OrderByDescending(b => b.FinalPrice)
+            .Take(5)
+            .ToList();
+        return ServiceResult<List<BoothRevenueDto>>.Success(result);
+    }
+
+    public async Task<ServiceResult<List<BoothRevenueDto>>> GetTopBoothsIn6Months()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddMonths(-6), now);
+        var booths = await LoadBooths();
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+
+        var byBooths = GroupRevenue(
+            invoices,
+            i => i.BoothId,
+            g => new BoothRevenueDto
+            {
+                BoothId = g.Key,
+                BoothName = booths.FirstOrDefault(b => b.BoothId == g.Key)?.BoothName ?? "",
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        ).ToList();
+        var result = byBooths
+            .OrderByDescending(b => b.FinalPrice)
+            .Take(5)
+            .ToList();
+        return ServiceResult<List<BoothRevenueDto>>.Success(result);
+    }
+
+    public async Task<ServiceResult<List<BoothRevenueDto>>> GetTopBoothsInCustom(DateTime From, DateTime To)
+    {
+        var totalDays = (To - From).TotalDays;
+        var invoices = await LoadInvoices(From, To);
+        var booths = await LoadBooths();
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+
+        var byBooths = GroupRevenue(
+            invoices,
+            i => i.BoothId,
+            g => new BoothRevenueDto
+            {
+                BoothId = g.Key,
+                BoothName = booths.FirstOrDefault(b => b.BoothId == g.Key)?.BoothName ?? "",
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        ).ToList();
+        var result = byBooths
+            .OrderByDescending(b => b.FinalPrice)
+            .Take(5)
+            .ToList();
+        return ServiceResult<List<BoothRevenueDto>>.Success(result);
+        
+    }
+    #endregion
+
+    #region  Pie Chart 
+    public async Task<ServiceResult<List<PaymentMethodRevenueDto>>> GetPaymentMethodIn7Days()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddDays(-7), now);
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+        var result = GroupRevenue(
+            invoices,
+            i => i.PaymentMethod,
+            g => new PaymentMethodRevenueDto
+            {
+                PaymentMethod = g.Key,
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        );
+        return ServiceResult<List<PaymentMethodRevenueDto>>.Success(result);
+    }
+
+    public async Task<ServiceResult<List<PaymentMethodRevenueDto>>> GetPaymentMethodIn6Months()
+    {
+        DateTime now = DateTime.UtcNow;
+        var invoices = await LoadInvoices(now.AddMonths(-6), now);
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+        var result = GroupRevenue(
+            invoices,
+            i => i.PaymentMethod,
+            g => new PaymentMethodRevenueDto
+            {
+                PaymentMethod = g.Key,
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        );
+        return ServiceResult<List<PaymentMethodRevenueDto>>.Success(result);
+    }
+    public async Task<ServiceResult<List<PaymentMethodRevenueDto>>> GetPaymentMethodInCustom(DateTime From, DateTime To)
+    {
+        var invoices = await LoadInvoices(From, To);
+        var totalRevenue = invoices.Sum(i => i.FinalPrice);
+        var result = GroupRevenue(
+            invoices,
+            i => i.PaymentMethod,
+            g => new PaymentMethodRevenueDto
+            {
+                PaymentMethod = g.Key,
+                FinalPrice = g.Sum(i => i.FinalPrice),
+                TransactionCount = g.Count(),
+                Percent = totalRevenue > 0 ? (float)(g.Sum(i => i.FinalPrice) / totalRevenue) * 100f : 0f
+            }
+        );
+        return ServiceResult<List<PaymentMethodRevenueDto>>.Success(result);
+    }
+    #endregion
     // Load data
     private Task<List<InvoiceDashboardDto>> LoadInvoices(DateTime From, DateTime To)
     {
@@ -167,6 +342,7 @@ public class DashBoardService : IDashBoardService
         .ToList();
         return Task.FromResult(result);
     }
+
     private Task<List<BoothDashboardDto>> LoadBooths()
     {
         var result = _boothRepository.Query()
@@ -186,91 +362,15 @@ public class DashBoardService : IDashBoardService
         return Task.FromResult(result);
     }
 
-    // Process data
-    private async Task<TodayRevenueDto> GetTodaySummary()
+    private List<TResult> GroupRevenue<TKey, TResult>(
+        List<InvoiceDashboardDto> invoices,
+        Func<InvoiceDashboardDto, TKey> keySelector,
+        Func<IGrouping<TKey, InvoiceDashboardDto>, TResult> resultSelector
+    )
     {
-        DateTime now = DateTime.UtcNow;
-        var invoices = await LoadInvoices(now.Date, now);
-        var yesterday = await LoadInvoices(now.Date.AddDays(-1), now.Date);
-
-        var TodayRevenue = invoices.Sum(i => i.FinalPrice);
-        var YesterdayRevenue = yesterday.Sum(i => i.FinalPrice);
-        var result = new TodayRevenueDto
-        {
-            FinalPrice = TodayRevenue,
-            TransactionCount = invoices.Count(),
-            YesterdayFinalPrice = YesterdayRevenue,
-            ComparePercent = YesterdayRevenue == 0 ? 100 
-                            : (float)(TodayRevenue - YesterdayRevenue) / (float)(YesterdayRevenue) * 100.0f
-        };
-        return result;
-    }
-    private async Task<MonthDetailDto> GetMonthSummary()
-    {
-        DateTime now = DateTime.UtcNow;
-
-        var thisMonth = await LoadInvoices(new DateTime(now.Year, now.Month, 1), now);
-        var revenue = thisMonth.Sum(i => i.FinalPrice);
-        var result = new MonthDetailDto
-        {
-            Month = now.Month,
-            Year = now.Year,
-            FinalPrice = revenue,
-            TransactionCount = thisMonth.Count(),
-            AveragePerDay = revenue / DateTime.DaysInMonth(now.Year, now.Month)
-        };
-        return result;
-    }
-    private async Task<DashBoardDto> ProcessData(List<InvoiceDashboardDto> invoices, List<BoothDashboardDto> booths, DateTime From, DateTime To)
-    {
-        var revenue = invoices.Sum(i => i.FinalPrice);
-        var byBooth = invoices
-                        .GroupBy(b => b.BoothId)
-                        .Select(g => new BoothRevenueDto
-                        {
-                            BoothId = g.Key,
-                            BoothName = booths.FirstOrDefault(b => b.BoothId == g.Key)?.BoothName ?? string.Empty,
-                            FinalPrice = g.Sum(i => i.FinalPrice),
-                            TransactionCount = g.Count(),
-                            Percent = revenue > 0 
-                                        ? (float)(g.Sum(i => i.FinalPrice) / revenue) * 100.0f 
-                                        : 0f
-                        })
-                        .OrderByDescending(b => b.FinalPrice)
-                        .ToList();
-        
-        var result = new DashBoardDto
-        {
-            From = From,
-            To = To,
-            Today = await GetTodaySummary(),
-            MonthDetail = await GetMonthSummary(),
-            ByBooth = byBooth,
-            TopBooths = byBooth.Take(5).ToList(),
-            ByPaymentMethod = invoices
-                                .GroupBy(i => i.PaymentMethod)
-                                .Select(g => new PaymentMethodRevenueDto
-                                {
-                                    PaymentMethod = g.Key,
-                                    FinalPrice = g.Sum(i => i.FinalPrice),
-                                    TransactionCount = g.Count(),
-                                    Percent = revenue > 0 
-                                        ? (float)(g.Sum(i => i.FinalPrice) / revenue) * 100.0f 
-                                        : 0f
-                                })
-                                .OrderByDescending(i => i.FinalPrice)
-                                .ToList(),
-            BoothIssues = booths
-                            .Select(g => new BoothInfor
-                            {
-                                BoothId = g.BoothId,
-                                BoothName = g.BoothName ?? string.Empty,
-                                status = g.Status
-                            })
-                            .OrderBy(b => b.status)
-                            .ToList(),
-            BranchCount = _branchRepository.Query().Count()
-        };
-        return result;
+        return invoices
+            .GroupBy(keySelector)
+            .Select(resultSelector)
+            .ToList();
     }
 }

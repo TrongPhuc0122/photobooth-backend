@@ -10,5 +10,5 @@ public class Topic : BaseEntity
     public string? BranchCode { get; set; }
     public DateTime CreateAt { get; set; }
 
-    public ICollection<Frame> Frames { get; set; } = new List<Frame>();
+    public ICollection<TopicsFrames> TopicsFrames { get; set; } = new List<TopicsFrames>();
 }

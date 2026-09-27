@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Entities.Commons;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Infrastructure.Extentions;
 
 namespace Infrastructure.Context
 {
@@ -10,6 +11,22 @@ namespace Infrastructure.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<TopicsFrames>()
+                .HasKey(tf => new { tf.TopicId, tf.FrameId });
+
+            modelBuilder.Entity<TopicsFrames>()
+                .HasOne(tf => tf.Topic)
+                .WithMany(t => t.TopicsFrames)
+                .HasForeignKey(tf => tf.TopicId);
+
+            modelBuilder.Entity<TopicsFrames>()
+                .HasOne(tf => tf.Frame)
+                .WithMany(f => f.TopicsFrames)
+                .HasForeignKey(tf => tf.FrameId);
+
+            modelBuilder.Entity<Setting>().OwnsSettingGroups();
+            modelBuilder.Entity<SettingHistory>().OwnsSettingGroups();
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
@@ -44,10 +61,13 @@ namespace Infrastructure.Context
         public DbSet<Frame> Frames { get; set; }
         public DbSet<Topic> Topics { get; set; }
         public DbSet<Setting> Settings { get; set; }
+        public DbSet<SettingHistory> SettingHistories { get; set; }
+        public DbSet<TopicsFrames> TopicsFrames { get; set; }
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-            
+
         }
     }
-    
+
 }
