@@ -56,13 +56,12 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
             {
                 return ServiceResult<TopicDto>.ValidationError("Dữ liệu base64 không hợp lệ");
             }
-            var avatarCheck = ValidateImageDimension(avatarBytes, "Avatar");
-            if(avatarCheck != null) return ServiceResult<TopicDto>.ValidationError(avatarCheck);
-
+            
             var topic = new Topic
             {
                 TopicName = dto.TopicName,
                 Avatar = string.Empty,
+                Base64Avatar = dto.Avatar,
                 layoutType = dto.layoutType,
                 BranchCode = dto.BranchCode,
                 CreateAt = DateTime.UtcNow
@@ -80,6 +79,7 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
                 TopicName = topic.TopicName,
                 layoutType = topic.layoutType,
                 FrameCount = 0,
+                Avatar = topic.Avatar,
                 BranchCode = topic.BranchCode,
                 CreateAt = topic.CreateAt
             };
@@ -118,7 +118,17 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
             string[] includes = { "TopicsFrames.Frame" };
             var pagedEntities = _repository.GetPaged(predicate, genericParams, searchProperties, includes);
 
-            var result = pagedEntities.Items.Select(_mapper.Map<Topic, TopicDto>);
+            var result = pagedEntities.Items.Select(t => new TopicDto
+            {
+                TopicId = t.TopicId,
+                TopicName = t.TopicName,
+                layoutType = t.layoutType,
+                FrameCount = 0,
+                Avatar = t.Avatar,
+                Base64Avatar = t.Base64Avatar,
+                BranchCode = t.BranchCode,
+                CreateAt = t.CreateAt
+            });
 
             var pagedResult = new PagedResult<TopicDto>(
                 result,
@@ -161,25 +171,6 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
         catch(Exception ex)
         {
             return ServiceResult<TopicDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
-        }
-    }
-
-    private static string? ValidateImageDimension(byte[] imageBytes, string fieldName)
-    {
-        try
-        {
-            using var ms = new MemoryStream(imageBytes);
-            using var image = Image.Load(ms);
-            if (image.Width != RequiredWidth || image.Height != RequiredHeight)
-            {
-                return $"{fieldName} phải có kích thước {RequiredWidth}x{RequiredHeight}, " +
-                       $"ảnh hiện tại là {image.Width}x{image.Height}";
-            }
-            return null;
-        }
-        catch (UnknownImageFormatException)
-        {
-            return $"{fieldName} không đúng định dạng ảnh (png, jpg, ...)";
         }
     }
 

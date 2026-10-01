@@ -88,6 +88,9 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 Subject = string.Empty,
                 Background = string.Empty,
                 Overlay = string.Empty,
+                Base64Subject = dto.Subject,
+                Base64Background = dto.Background,
+                Base64Overlay = dto.Overlay,
                 CreatedAt = DateTime.UtcNow,
                 TopicsFrames = topics.Select(t => new TopicsFrames { TopicId = t.TopicId }).ToList()
             };
@@ -159,6 +162,9 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 Subject = f.Subject,
                 Background = f.Background,
                 Overlay = f.Overlay,
+                Base64Subject = f.Base64Subject,
+                Base64Background = f.Base64Background,
+                Base64Overlay = f.Base64Overlay,
                 CreatedAt = f.CreatedAt
             });
 
@@ -209,6 +215,9 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 Subject = frame.Subject,
                 Background = frame.Background,
                 Overlay = frame.Overlay,
+                Base64Subject = frame.Base64Subject,
+                Base64Background = frame.Base64Background,
+                Base64Overlay = frame.Base64Overlay,
                 CreatedAt = frame.CreatedAt
             };
             return ServiceResult<FrameDto>.Success(dto);

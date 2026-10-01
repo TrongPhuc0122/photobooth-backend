@@ -15,7 +15,9 @@ public class Frame : BaseEntity
     public required string Subject { get; set; } = string.Empty;
     public required string Background { get; set; } = string.Empty;
     public required string Overlay { get; set; } = string.Empty;
-
+    public required string Base64Subject { get; set; } = string.Empty;
+    public required string Base64Background { get; set; } = string.Empty;
+    public required string Base64Overlay { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 
     [ForeignKey("BranchId")]

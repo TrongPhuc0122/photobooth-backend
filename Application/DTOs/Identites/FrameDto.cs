@@ -19,5 +19,8 @@ public class FrameDto
     public string Subject { get; set; } = string.Empty;
     public string Background { get; set; } = string.Empty;
     public string Overlay { get; set; } = string.Empty;
+    public string Base64Subject { get; set; } = string.Empty;
+    public string Base64Background { get; set; } = string.Empty;
+    public string Base64Overlay { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
