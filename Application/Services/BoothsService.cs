@@ -116,7 +116,7 @@ namespace Application.Services
                     PaperMax = booth.BoothResources.PaperMax,
                     RibbonCount = booth.BoothResources.RibbonCount,
                     RibbonMax = booth.BoothResources.RibbonMax,
-                    MonthlyRevenue = 0
+                    MonthlyRevenue = 0m
                 };
                 return ServiceResult<BoothDto>.Created(result);
             }
@@ -496,34 +496,54 @@ namespace Application.Services
                 return ServiceResult.InternalServerError($"Lỗi truy vấn: {ex.Message}");
             }
         }
+        private static readonly TimeSpan HeartbeatTimeout = TimeSpan.FromSeconds(60);
+
         public async Task<ServiceResult> SetStatus()
         {
-            var booths = _repository.GetMulti(b => b.BoothErrors.Any(e => e.IsFixed == false), includes: ["BoothErrors", "BoothHealth"]);
-            foreach(var health in booths)
+            var threshold = DateTime.UtcNow - HeartbeatTimeout;
+            var missingHealth = new List<Guid>();
+
+            var booths = _repository.GetMulti(b => true, includes: ["BoothErrors", "BoothHealth"]);
+            foreach (var booth in booths)
             {
-                if(health.BoothHealth == null) return ServiceResult.InternalServerError($"Không tìm thấy BoothHealth cho BoothId = {health.BoothId}");
-                health.BoothHealth.Status = Status.ERROR;
-                _healthRepository.Update(health.BoothHealth);
-            }
-            var offlineBooths = _repository.GetMulti(b => !b.BoothErrors.Any(e => e.IsFixed == false), includes: ["BoothHealth"]);
-            foreach(var health in offlineBooths)
-            {
-                if(health.BoothHealth == null) return ServiceResult.InternalServerError($"Không tìm thấy BoothHealth cho BoothId = {health.BoothId}");
-                if(health.BoothHealth.Status != Status.ONLINE) health.BoothHealth.Status = Status.OFFLINE;
-                _healthRepository.Update(health.BoothHealth);
-            }
-            var activeBranch = _branchRepository.GetMulti(b => b.Booths.Any(booth => booth.BoothHealth != null && booth.BoothHealth.Status == Status.ONLINE), includes: ["Booths", "Booths.BoothHealth"]);
-            foreach(var branch in activeBranch)
-            {
-                branch.Status = Status.ONLINE;
-            }
-            var offlineBranch = _branchRepository.GetMulti(b => !b.Booths.Any(booth => booth.BoothHealth != null && booth.BoothHealth.Status == Status.ONLINE), includes: ["Booths", "Booths.BoothHealth"]);
-            foreach(var branch in offlineBranch)
-            {
-                branch.Status = Status.OFFLINE;
+                var health = booth.BoothHealth;
+                if (health == null)
+                {
+                    missingHealth.Add(booth.BoothId);
+                    continue;
+                }
+
+                var hasUnfixedError = booth.BoothErrors.Any(e => !e.IsFixed);
+                var newStatus = hasUnfixedError ? Status.ERROR
+                            : health.LastHeartbeat >= threshold ? Status.ONLINE
+                            : Status.OFFLINE;
+
+                if (health.Status != newStatus)
+                {
+                    health.Status = newStatus;
+                    _healthRepository.Update(health);
+                }
             }
             await _unitOfWork.SaveChangesAsync();
-            return ServiceResult.Success();
+
+            var branches = _branchRepository.GetMulti(b => true, includes: ["Booths", "Booths.BoothHealth"]);
+            foreach (var branch in branches)
+            {
+                var newStatus = branch.Booths.Any(b => b.BoothHealth != null && b.BoothHealth.Status == Status.ONLINE)
+                    ? Status.ONLINE
+                    : Status.OFFLINE;
+
+                if (branch.Status != newStatus)
+                {
+                    branch.Status = newStatus;
+                    _branchRepository.Update(branch);
+                }
+            }
+            await _unitOfWork.SaveChangesAsync();
+
+            return missingHealth.Count > 0
+                ? ServiceResult.InternalServerError($"Không tồn tại BoothHealth cho booth: {string.Join(", ", missingHealth)}")
+                : ServiceResult.Success();
         }
         #endregion
         

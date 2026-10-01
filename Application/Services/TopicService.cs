@@ -7,22 +7,31 @@ using Application.Services.Commons;
 using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Shared.QueryParameter;
 using Shared.Results;
+using SixLabors.ImageSharp;
+
 
 namespace Application.Services;
 public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>, ITopicService
 {
     private readonly IGenericRepository<Frame, int> _frameRepository;
+    private readonly IConfiguration _configuration;
     public TopicService(
         IGenericRepository<Topic, int> repository,
         IGenericRepository<Frame, int> frameRepository,
         IMapper mapper,
-        IUnitOfWork unitOfWork
+        IUnitOfWork unitOfWork,
+        IConfiguration configuration
     ) : base(repository,  mapper, unitOfWork)
     {
-        _frameRepository = frameRepository;    
+        _frameRepository = frameRepository;
+        _configuration = configuration;    
     }
+
+    private const int RequiredWidth = 1200;
+    private const int RequiredHeight = 1800;
 
     public async override Task<ServiceResult<TopicDto>> CreateAsync(CreateTopicDto dto)
     {
@@ -38,17 +47,33 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
             {
                 return ServiceResult<TopicDto>.NotFound($"Không tồn tại Frame với Id: {string.Join(", ", dto.FrameIds)}");
             }
+            byte[] avatarBytes;
+            try
+            {
+                avatarBytes = Convert.FromBase64String(CleanBase64(dto.Avatar));
+            }
+            catch (FormatException)
+            {
+                return ServiceResult<TopicDto>.ValidationError("Dữ liệu base64 không hợp lệ");
+            }
+            var avatarCheck = ValidateImageDimension(avatarBytes, "Avatar");
+            if(avatarCheck != null) return ServiceResult<TopicDto>.ValidationError(avatarCheck);
+
             var topic = new Topic
             {
                 TopicName = dto.TopicName,
+                Avatar = string.Empty,
                 layoutType = dto.layoutType,
                 BranchCode = dto.BranchCode,
                 CreateAt = DateTime.UtcNow
             };
-
             _repository.Add(topic);
             await _unitOfWork.SaveChangesAsync();
 
+            var avatarUrl = await SaveImageAsync(topic.TopicId, "avatar", avatarBytes);
+            topic.Avatar = avatarUrl;
+            await _unitOfWork.SaveChangesAsync();
+            
             var result = new TopicDto
             {
                 TopicId = topic.TopicId,
@@ -137,6 +162,56 @@ public class TopicService : GenericService<Topic, TopicDto, CreateTopicDto, int>
         {
             return ServiceResult<TopicDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
         }
+    }
 
+    private static string? ValidateImageDimension(byte[] imageBytes, string fieldName)
+    {
+        try
+        {
+            using var ms = new MemoryStream(imageBytes);
+            using var image = Image.Load(ms);
+            if (image.Width != RequiredWidth || image.Height != RequiredHeight)
+            {
+                return $"{fieldName} phải có kích thước {RequiredWidth}x{RequiredHeight}, " +
+                       $"ảnh hiện tại là {image.Width}x{image.Height}";
+            }
+            return null;
+        }
+        catch (UnknownImageFormatException)
+        {
+            return $"{fieldName} không đúng định dạng ảnh (png, jpg, ...)";
+        }
+    }
+
+    private static string CleanBase64(string base64)
+    {
+        var commaIndex = base64.IndexOf(',');
+        return commaIndex >= 0 ? base64[(commaIndex + 1)..] : base64;
+    }
+
+    private async Task<string> SaveImageAsync(int topicId, string imageType, byte[] imageBytes)
+    {
+        var storagePath = _configuration["TopicStorage:Path"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình TopicStorage:Path");
+        var baseUrl = _configuration["TopicStorage:BaseUrl"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình TopicStorage:BaseUrl");
+
+        var rootPath = Path.IsPathRooted(storagePath)
+            ? storagePath
+            : Path.Combine(Directory.GetCurrentDirectory(), storagePath);
+
+        var folderPath = Path.Combine(rootPath, topicId.ToString());
+
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+
+        var fileName = $"{imageType}.png";
+        var filePath = Path.Combine(folderPath, fileName);
+
+        await File.WriteAllBytesAsync(filePath, imageBytes);
+
+        return $"{baseUrl}/Topic/{topicId}/{fileName}";
     }
 }
