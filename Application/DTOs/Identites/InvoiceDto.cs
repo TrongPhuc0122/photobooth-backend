@@ -13,4 +13,5 @@ public class InvoiceBasicInfor
     public float DiscountPercent { get; set; }
     public decimal FinalPrice { get; set; }
     public int InvoiceId { get; set; }
+    public int Quantity { get; set; }
 }

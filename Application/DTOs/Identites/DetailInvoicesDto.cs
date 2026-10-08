@@ -23,5 +23,6 @@ public class PaymentDetail
     public string? VoucherCOde { get; set; }
     public float? DiscountPercent { get; set; }
     public decimal FinalPrice { get; set; }
+    public int Quantity { get; set; }
     public PaymentMethodStatus PaymentMethod { get; set; }
 }

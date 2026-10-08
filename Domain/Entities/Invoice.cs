@@ -17,6 +17,7 @@ namespace Domain.Entities
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
         public bool FlowStatus { get; set; }
+        public int Quantity { get; set; }
         public PaymentMethodStatus PaymentMethod { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

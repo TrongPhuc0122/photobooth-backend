@@ -61,6 +61,7 @@ namespace Application.Services
                                     ? dto.Price * (decimal)(1.0f - voucher.DiscountPercent)
                                     : dto.Price,
                     FlowStatus = true,
+                    Quantity = dto.Quantity,
                     PaymentMethod = dto.PaymentMethod,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -108,6 +109,7 @@ namespace Application.Services
                     DiscountPercent = i.Voucher != null ? i.Voucher.DiscountPercent * 100.0f : 0,
                     FinalPrice = i.FinalPrice,
                     InvoiceId = i.InvoiceId,
+                    Quantity = i.Quantity,
                 },
                 VoucherCode = i.Voucher?.VoucherCode,
                 InvoiceCode = i.InvoiceCode,
@@ -145,6 +147,7 @@ namespace Application.Services
                         VoucherCOde = i.Voucher?.VoucherCode,
                         DiscountPercent = i.Voucher?.DiscountPercent * 100.0f,
                         FinalPrice = i.FinalPrice,
+                        Quantity = i.Quantity,
                         PaymentMethod = i.PaymentMethod
                     },
                     CreatedAt = i.CreatedAt
@@ -192,6 +195,7 @@ namespace Application.Services
                     VoucherCOde = invoice.Voucher?.VoucherCode,
                     DiscountPercent = invoice.Voucher?.DiscountPercent * 100.0f,
                     FinalPrice = invoice.FinalPrice,
+                    Quantity = invoice.Quantity,
                     PaymentMethod = invoice.PaymentMethod
                 },
                 CreatedAt = invoice.CreatedAt

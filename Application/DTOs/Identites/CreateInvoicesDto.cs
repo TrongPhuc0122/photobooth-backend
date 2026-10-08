@@ -6,6 +6,7 @@ namespace Application.DTOs.Identites
     {
         public required decimal Price { get; set; }
         public string? VoucherCode { get; set; }
+        public int Quantity { get; set; }
         public required PaymentMethodStatus PaymentMethod { get; set; }
     }
 }
