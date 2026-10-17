@@ -18,9 +18,9 @@ namespace Application.Interfaces
         Task<ServiceResult> SetBoothStorage (Guid boothId, int? paperMax, int? ribbonMax);
         Task<ServiceResult> GetHeartBeat (Guid boothId);
         Task<ServiceResult> SetStatus();
-        Task<ServiceResult> ReportCurrentSetting(Guid boothId, CreateSettingHistoryDto dto);
-        ServiceResult<BoothSettingDto> GetSetting(Guid boothId);
-        ServiceResult<PagedResult<SettingHistoryDto>> GetSettingHistory(Guid boothId, CommonQueryParameters parameters);
+        //Task<ServiceResult> ReportCurrentSetting(Guid boothId, CreateSettingHistoryDto dto);
+        //ServiceResult<BoothSettingDto> GetSetting(Guid boothId);
+        //ServiceResult<PagedResult<SettingHistoryDto>> GetSettingHistory(Guid boothId, CommonQueryParameters parameters);
         ServiceResult<IEnumerable<BoothOptionDto>> GetAllOptions();
     }
 }

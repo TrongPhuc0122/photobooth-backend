@@ -2,14 +2,13 @@ namespace Application.DTOs.Identites;
 
 public class CreateSettingDto
 {
-    public required CameraDto Camera { get; set; }
-    public required PrinterDto Printer { get; set; }
-    public required SystemDto System { get; set; }
-    public List<Guid> BoothIds { get; set; } = new();
-    public DateTime SettingTime { get; set; }
+    public CameraSettingDto Camera { get; set; } = new();
+    public PrinterSettingDto Printer { get; set; } = new();
+    public SystemSettingDto System { get; set; } = new();
+    public DateTime UpdateAt { get; set; }
 }
 
-public class CameraDto
+public class CameraSettingDto
 {
     public string AE { get; set; } = string.Empty;
     public string ISO { get; set; } = string.Empty;
@@ -25,7 +24,7 @@ public class CameraDto
     public string DriveMode { get; set; } = string.Empty;
 }
 
-public class PrinterDto
+public class PrinterSettingDto
 {
     public bool ColorCorrection { get; set; }
     public bool AutoRotate { get; set; }
@@ -34,15 +33,15 @@ public class PrinterDto
     public string PrinterDriverName { get; set; } = string.Empty;
 }
 
-public class SystemDto
+public class SystemSettingDto
 {
-    public required DefaultDto Default { get; set; }
-    public required TimerDto Timer { get; set; }
-    public required CaptureDto Capture { get; set; }
-    public required AudioDto Audio { get; set; }
+    public DefaultSettingDto Default { get; set; } = new();
+    public TimerSettingDto Timer { get; set; } = new();
+    public CaptureSettingDto Capture { get; set; } = new();
+    public AudioSettingDto Audio { get; set; } = new();
 }
 
-public class DefaultDto
+public class DefaultSettingDto
 {
     public string Language { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
@@ -51,7 +50,7 @@ public class DefaultDto
     public string ServerAddress { get; set; } = string.Empty;
 }
 
-public class TimerDto
+public class TimerSettingDto
 {
     public int PreviewSeconds { get; set; }
     public int SelectScreenSeconds { get; set; }
@@ -65,7 +64,7 @@ public class TimerDto
     public int PrintWaitSeconds { get; set; }
 }
 
-public class CaptureDto
+public class CaptureSettingDto
 {
     public int TotalShots { get; set; }
     public int AutoCaptureCountdown { get; set; }
@@ -76,7 +75,7 @@ public class CaptureDto
     public int EvfOffMs { get; set; }
 }
 
-public class AudioDto
+public class AudioSettingDto
 {
     public bool VoiceGuide { get; set; }
     public bool BackgroundMusic { get; set; }

@@ -1,18 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities;
-
-public class Setting : IHasSettingGroups
+public class Setting
 {
     [Key]
     public int SettingId { get; set; }
-    public List<Booths> Booths { get; set; } = new();
     public required CameraSetting Camera { get; set; }
     public required PrinterSetting Printer { get; set; }
     public required SystemSetting System { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public bool SettingStatus { get; set; }
-    public DateTime SettingTime { get; set; }
+    public DateTime UpdateAt { get; set; }
+    public virtual ICollection<Booths> Booths { get; set; } = new List<Booths>();
 }
 
 public class CameraSetting
@@ -50,59 +47,42 @@ public class SystemSetting
 
 public class DefaultSetting
 {
-    public string Language { get; set; } = string.Empty;      // Ngôn ngữ
-    public string Country { get; set; } = string.Empty;       // Quốc gia
-    public string RunMode { get; set; } = string.Empty;       // Chế độ chạy
-    public string Server { get; set; } = string.Empty;        // Máy chủ
-    public string ServerAddress { get; set; } = string.Empty; // Địa chỉ máy chủ
+    public string Language { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+    public string RunMode { get; set; } = string.Empty;
+    public string Server { get; set; } = string.Empty;
+    public string ServerAddress { get; set; } = string.Empty;
 }
 
 public class TimerSetting
 {
-    public int PreviewSeconds { get; set; }          // Xem trước
-    public int SelectScreenSeconds { get; set; }      // Màn hình chọn
-    public int SelectPhotoSeconds { get; set; }       // Ảnh lựa chọn
-    public int PaymentWaitSeconds { get; set; }       // Chờ thanh toán
-    public int ErrorScreenSeconds { get; set; }       // Màn hình lỗi
-    public int SelectFilterSeconds { get; set; }      // Chọn bộ lọc
-    public int PaymentMethodSeconds { get; set; }     // Phương thức thanh toán
-    public int UnitPricePaymentSeconds { get; set; }  // Thanh toán đơn giá
-    public int SelectVoucherSeconds { get; set; }     // Chọn mã giảm giá
-    public int PrintWaitSeconds { get; set; }         // Chờ in
+    public int PreviewSeconds { get; set; }
+    public int SelectScreenSeconds { get; set; }
+    public int SelectPhotoSeconds { get; set; }
+    public int PaymentWaitSeconds { get; set; }
+    public int ErrorScreenSeconds { get; set; }
+    public int SelectFilterSeconds { get; set; }
+    public int PaymentMethodSeconds { get; set; }
+    public int UnitPricePaymentSeconds { get; set; }
+    public int SelectVoucherSeconds { get; set; }
+    public int PrintWaitSeconds { get; set; }
 }
 
 public class CaptureSetting
 {
-    public int TotalShots { get; set; }             // Tổng số lượt chụp
-    public int AutoCaptureCountdown { get; set; }   // Đếm ngược chụp tự động
-    public int ShotsFor4Cut { get; set; }           // Số ảnh chụp đối với 4 cut
-    public int ShotsFor8Cut { get; set; }           // Số ảnh chụp đối với 8 cut
-    public int MaxThumbnails { get; set; }          // Số ảnh thu nhỏ tối đa
-    public int EvfGcIntervalSeconds { get; set; }   // Khoảng thời gian EVF GC
-    public int EvfOffMs { get; set; }               // Khoảng tắt EVF (ms)
+    public int TotalShots { get; set; }
+    public int AutoCaptureCountdown { get; set; }
+    public int ShotsFor4Cut { get; set; }
+    public int ShotsFor8Cut { get; set; }
+    public int MaxThumbnails { get; set; }
+    public int EvfGcIntervalSeconds { get; set; }
+    public int EvfOffMs { get; set; }
 }
 
 public class AudioSetting
 {
-    public bool VoiceGuide { get; set; }          // Hướng dẫn giọng
-    public bool BackgroundMusic { get; set; }     // Nhạc nền
-    public int Volume { get; set; }               // Âm lượng
-    public bool PrintBackgroundMusic { get; set; } // Nhạc nền in
-}
-
-public class BoothSetting
-{
-    public int BoothId { get; set; }
-    public Booths Booth { get; set; } = null!;
-    public int SettingId { get; set; }
-    public Setting Setting { get; set; } = null!;
-    public BoothSettingStatus Status { get; set; } = BoothSettingStatus.Pending;
-    public DateTime? AckedAt { get; set; }
-}
-
-public enum BoothSettingStatus
-{
-    Pending,
-    Applied,
-    Missed
+    public bool VoiceGuide { get; set; }
+    public bool BackgroundMusic { get; set; }
+    public int Volume { get; set; }
+    public bool PrintBackgroundMusic { get; set; }
 }

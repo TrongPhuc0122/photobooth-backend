@@ -2,7 +2,6 @@ using Domain.Entities;
 using Domain.Entities.Commons;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using Infrastructure.Extentions;
 
 namespace Infrastructure.Context
 {
@@ -25,8 +24,6 @@ namespace Infrastructure.Context
                 .WithMany(f => f.TopicsFrames)
                 .HasForeignKey(tf => tf.FrameId);
 
-            modelBuilder.Entity<Setting>().OwnsSettingGroups();
-            modelBuilder.Entity<SettingHistory>().OwnsSettingGroups();
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
@@ -45,8 +42,7 @@ namespace Infrastructure.Context
             }
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-            modelBuilder.Entity<Setting>().OwnsOne(s => s.Camera);
-            modelBuilder.Entity<Setting>().OwnsOne(s => s.Printer);
+
         }
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Voucher> Vouchers { get; set; }
@@ -60,9 +56,8 @@ namespace Infrastructure.Context
         public DbSet<BoothError> BoothError { get; set; }
         public DbSet<Frame> Frames { get; set; }
         public DbSet<Topic> Topics { get; set; }
-        public DbSet<Setting> Settings { get; set; }
-        public DbSet<SettingHistory> SettingHistories { get; set; }
         public DbSet<TopicsFrames> TopicsFrames { get; set; }
+        public DbSet<Setting> Settings { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {

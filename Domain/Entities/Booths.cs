@@ -13,7 +13,6 @@ namespace Domain.Entities
         public string Brand { get; set; } = string.Empty;
         public int BranchId{ get; set; }
         public int? SettingId { get; set; }
-        public int? SettingHistoryId { get; set; }
         public string? Creator { get; set; }
         public DateTime CreatedAt{ get; set; } = DateTime.UtcNow;
 
@@ -21,8 +20,6 @@ namespace Domain.Entities
         public virtual Branch Branch{ get; set; } = null!;
         [ForeignKey("SettingId")]
         public virtual Setting? Setting { get; set; }
-        [ForeignKey("SettingHistoryId")]
-        public virtual SettingHistory? SettingHistory { get; set; }
 
         public virtual BoothHealth? BoothHealth { get; set; }
 
@@ -31,5 +28,6 @@ namespace Domain.Entities
         public virtual BoothResources? BoothResources { get; set; }
         public virtual ICollection<BoothError> BoothErrors { get; set; } = new List<BoothError>();
         public virtual ICollection<Photo> Photos { get; set; } = new List<Photo>();
+        public virtual ICollection<SettingLog> SettingLogs { get; set; } = new List<SettingLog>();
     }
 }

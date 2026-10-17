@@ -116,26 +116,7 @@ namespace API.Controllers
         #endregion
 
         #region BoothSetting
-        [HttpGet("{boothId:Guid}/setting")]
-        public IActionResult GetSetting(Guid boothId)
-        {
-            var result = _boothsService.GetSetting(boothId);
-            return ToActionResult(result);
-        }
-
-        [HttpPost("{boothId:Guid}/setting")]
-        public async Task<IActionResult> ReportCurrentSetting(Guid boothId, [FromBody] CreateSettingHistoryDto dto)
-        {
-            var result = await _boothsService.ReportCurrentSetting(boothId, dto);
-            return ToActionResult(result);
-        }
-
-        [HttpGet("{boothId:Guid}/setting-history")]
-        public IActionResult GetSettingHistory(Guid boothId, [FromQuery] CommonQueryParameters parameters)
-        {
-            var result = _boothsService.GetSettingHistory(boothId, parameters);
-            return ToActionResult(result);
-        }
+        
         #endregion
     }
 }

@@ -1,6 +1,6 @@
-using Application.DTOs.Identites;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Application.DTOs.Identites;
 
 namespace API.Controllers
 {
@@ -8,31 +8,38 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class SettingController : BaseController
     {
-        private readonly ISettingService _service;
+        private readonly ISettingService _settingService;
 
-        public SettingController(ISettingService service)
+        public SettingController(ISettingService settingService)
         {
-            _service = service;
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateSettingDto dto)
-        {
-            var result = await _service.CreateAsync(dto);
-            return ToActionResult(result);
+            _settingService = settingService;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetSetting()
         {
-            var result = _service.GetAll();
+            var result = _settingService.GetAll();
             return ToActionResult(result);
         }
 
-        [HttpGet("{id:int}")]
-        public IActionResult GetById(int id)
+        [HttpGet("{id}")]
+        public IActionResult GetSettingById(int id)
         {
-            var result = _service.GetById(id);
+            var result = _settingService.GetById(id);
+            return ToActionResult(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateSetting([FromBody] CreateSettingDto dto)
+        {
+            var result = await _settingService.CreateAsync(dto);
+            return ToActionResult(result);
+        }
+
+        [HttpPost("booth-info")]
+        public async Task<IActionResult> BoothInfo([FromBody] CreateSettingLogDto dto)
+        {
+            var result = await _settingService.BoothInfor(dto);
             return ToActionResult(result);
         }
     }

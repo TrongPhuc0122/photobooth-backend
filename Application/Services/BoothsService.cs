@@ -19,8 +19,6 @@ namespace Application.Services
         private readonly IGenericRepository<BoothHealth, int> _healthRepository;
         private readonly IGenericRepository<BoothResources, int> _resourceRepository;
         private readonly IGenericRepository<Branch, int> _branchRepository;
-        private readonly IGenericRepository<Setting, int> _settingRepository;
-        private readonly IGenericRepository<SettingHistory, int> _settingHistoryRepository;
 
         public BoothService(
             IGenericRepository<Booths, Guid> BoothRepository,
@@ -28,8 +26,6 @@ namespace Application.Services
             IGenericRepository<BoothHealth, int> healthRepository,
             IGenericRepository<BoothResources, int> resourcesRepository,
             IGenericRepository<Branch, int> branchRepository,
-            IGenericRepository<Setting, int> settingRepository,
-            IGenericRepository<SettingHistory, int> settingHistoryRepository,
             IMapper mapper,
             IUnitOfWork unitOfWork)
             : base(BoothRepository, mapper, unitOfWork)
@@ -38,8 +34,6 @@ namespace Application.Services
             _healthRepository = healthRepository;
             _resourceRepository = resourcesRepository;
             _branchRepository = branchRepository;
-            _settingRepository = settingRepository;
-            _settingHistoryRepository = settingHistoryRepository;
         }
         // BUSINESS
         #region Booths
@@ -548,123 +542,7 @@ namespace Application.Services
         #endregion
         
         #region BoothSetting
-        public ServiceResult<BoothSettingDto> GetSetting(Guid boothId)
-        {
-            Booths booth;
-            try
-            {
-                string[] includes = { "Setting" };
-                booth = _repository.GetSingleByCondition(b => b.BoothId == boothId, includes);
-            }
-            catch (KeyNotFoundException)
-            {
-                return ServiceResult<BoothSettingDto>.NotFound($"Không tồn tại BoothId = {boothId}");
-            }
-
-            if (booth.Setting == null)
-            {
-                return ServiceResult<BoothSettingDto>.NotFound($"Booth {boothId} chưa được gán setting");
-            }
-
-            try
-            {
-                var dto = new BoothSettingDto
-                {
-                    SettingId = booth.Setting.SettingId,
-                    Camera = booth.Setting.Camera,
-                    Printer = booth.Setting.Printer,
-                    System = booth.Setting.System,
-                    UpdatedAt = booth.Setting.UpdatedAt
-                };
-                return ServiceResult<BoothSettingDto>.Success(dto);
-            }
-            catch (Exception ex)
-            {
-                return ServiceResult<BoothSettingDto>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
-            }
-        }
-
-        public async Task<ServiceResult> ReportCurrentSetting(Guid boothId, CreateSettingHistoryDto dto)
-        {
-            try
-            {
-                _repository.GetSingleByCondition(b => b.BoothId == boothId);
-            }
-            catch (KeyNotFoundException)
-            {
-                return ServiceResult.NotFound($"Không tồn tại BoothId = {boothId}");
-            }
-
-            try
-            {
-                var history = new SettingHistory
-                {
-                    BoothId = boothId,
-                    Camera = dto.Camera,
-                    Printer = dto.Printer,
-                    System = dto.System,
-                    CalledAt = dto.CalledAt
-                };
-                _settingHistoryRepository.Add(history);
-                await _unitOfWork.SaveChangesAsync();
-
-                return ServiceResult.Created();
-            }
-            catch (Exception ex)
-            {
-                return ServiceResult.InternalServerError($"Lỗi lưu lịch sử setting: {ex.Message}");
-            }
-        }
-
-        public ServiceResult<PagedResult<SettingHistoryDto>> GetSettingHistory(Guid boothId, CommonQueryParameters parameters)
-        {
-            if (!_repository.CheckContains(b => b.BoothId == boothId))
-                return ServiceResult<PagedResult<SettingHistoryDto>>.NotFound($"Không tồn tại BoothId = {boothId}");
-
-            try
-            {
-                var genericParams = new GenericQueryParameters
-                {
-                    Index = parameters.Index,
-                    PageSize = parameters.PageSize,
-                    SortBy = parameters.SortBy,
-                    SortDirection = parameters.SortDirection,
-                    Search = parameters.Search
-                };
-
-                string[] searchProperties = [];
-                string[] includes = [];
-
-                var pagedEntities = _settingHistoryRepository.GetPaged(
-                    predicate: h => h.BoothId == boothId,
-                    genericParams,
-                    searchProperties,
-                    includes
-                );
-
-                var result = pagedEntities.Items.Select(h => new SettingHistoryDto
-                {
-                    SettingHistoryId = h.SettingHistoryId,
-                    Camera = h.Camera,
-                    Printer = h.Printer,
-                    System = h.System,
-                    CalledAt = h.CalledAt
-                });
-
-                var pagedResult = new PagedResult<SettingHistoryDto>(
-                    result,
-                    pagedEntities.TotalCount,
-                    pagedEntities.Index,
-                    pagedEntities.PageSize
-                );
-
-                return ServiceResult<PagedResult<SettingHistoryDto>>.Success(pagedResult);
-            }
-            catch (Exception ex)
-            {
-                return ServiceResult<PagedResult<SettingHistoryDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
-            }
-        }
+        
         #endregion
         // VALIDATION
         private ServiceResult ValidateBoothName(string? name)

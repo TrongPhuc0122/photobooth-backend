@@ -44,7 +44,14 @@ namespace Application.Mappings
 
             // Setting
             CreateMap<Setting, SettingDto>();
-            CreateMap<CreateBoothSettingDto, Setting>();
+            CreateMap<CameraSetting, CameraSettingDto>();
+            CreateMap<PrinterSetting, PrinterSettingDto>();
+            CreateMap<SystemSetting, SystemSettingDto>();
+            CreateMap<DefaultSetting, DefaultSettingDto>();
+            CreateMap<TimerSetting, TimerSettingDto>();
+            CreateMap<CaptureSetting, CaptureSettingDto>();
+            CreateMap<AudioSetting, AudioSettingDto>();
+            
         }
     }
 }
