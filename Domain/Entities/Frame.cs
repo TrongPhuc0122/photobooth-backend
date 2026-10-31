@@ -15,10 +15,11 @@ public class Frame : BaseEntity
     public required string Subject { get; set; } = string.Empty;
     public required string Background { get; set; } = string.Empty;
     public required string Overlay { get; set; } = string.Empty;
-    public required string Base64Subject { get; set; } = string.Empty;
-    public required string Base64Background { get; set; } = string.Empty;
-    public required string Base64Overlay { get; set; } = string.Empty;
+    public string Base64Subject { get; set; } = string.Empty;
+    public string Base64Background { get; set; } = string.Empty;
+    public string Base64Overlay { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdateAt {get; set; }
 
     [ForeignKey("BranchId")]
     public virtual Branch? Branch { get; set; }

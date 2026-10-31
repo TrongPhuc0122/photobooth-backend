@@ -1,0 +1,110 @@
+$kind: http-request
+name: http://localhost:5092/api/Frames/multipart
+description: ""
+url: http://localhost:5092/api/Frames/multipart
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"topicName\": \"Summer\",\r
+
+    \    \"avatar\": \"/avatars/summer.png\",\r
+
+    \    \"base64Avatar\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgAAACAAAB4iG8MwAAAABJRU5ErkJggg==\",\r
+
+    \    \"layoutType\": 3,\r
+
+    \    \"createAt\": \"2026-10-14T14:24:12.159301+00:00\"\r
+
+    \  }"
+order: 1000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      // 1. Status code is 200
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      // 2. Response time is acceptable (under 3000ms)
+      pm.test("Response time is acceptable", function () {
+          pm.expect(pm.response.responseTime).to.be.below(3000);
+      });
+
+      // 3. Response has JSON content-type
+      pm.test("Response has JSON content-type", function () {
+          pm.expect(pm.response.headers.get("Content-Type")).to.include("application/json");
+      });
+
+      // 4. Response body has required fields
+      pm.test("Response body has required fields", function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property("frameId");
+          pm.expect(json).to.have.property("frameName");
+          pm.expect(json).to.have.property("topics");
+          pm.expect(json).to.have.property("subject");
+          pm.expect(json).to.have.property("background");
+          pm.expect(json).to.have.property("overlay");
+          pm.expect(json).to.have.property("createdAt");
+      });
+
+      // 5. frameId is a positive number
+      pm.test("frameId is a positive number", function () {
+          const json = pm.response.json();
+          pm.expect(json.frameId).to.be.a("number");
+          pm.expect(json.frameId).to.be.above(0);
+      });
+
+      // 6. frameName is a non-empty string
+      pm.test("frameName is a non-empty string", function () {
+          const json = pm.response.json();
+          pm.expect(json.frameName).to.be.a("string");
+          pm.expect(json.frameName.trim()).to.not.be.empty;
+      });
+
+      // 7. topics is a non-empty array
+      pm.test("topics is a non-empty array", function () {
+          const json = pm.response.json();
+          pm.expect(json.topics).to.be.an("array");
+          pm.expect(json.topics.length).to.be.above(0);
+      });
+
+      // 8. Each topic has required fields
+      pm.test("Each topic has required fields", function () {
+          const json = pm.response.json();
+          json.topics.forEach(function (topic) {
+              pm.expect(topic).to.have.property("topicId");
+              pm.expect(topic).to.have.property("topicName");
+              pm.expect(topic).to.have.property("layoutType");
+          });
+      });
+
+      // 9. subject URL is a valid string
+      pm.test("subject URL is a valid string", function () {
+          const json = pm.response.json();
+          pm.expect(json.subject).to.be.a("string");
+          pm.expect(json.subject).to.not.be.empty;
+      });
+
+      // 10. background URL is a valid string
+      pm.test("background URL is a valid string", function () {
+          const json = pm.response.json();
+          pm.expect(json.background).to.be.a("string");
+          pm.expect(json.background).to.not.be.empty;
+      });
+
+      // 11. overlay URL is a valid string
+      pm.test("overlay URL is a valid string", function () {
+          const json = pm.response.json();
+          pm.expect(json.overlay).to.be.a("string");
+          pm.expect(json.overlay).to.not.be.empty;
+      });
+
+      // 12. createdAt is a non-empty string
+      pm.test("createdAt is a non-empty string", function () {
+          const json = pm.response.json();
+          pm.expect(json.createdAt).to.be.a("string");
+          pm.expect(json.createdAt).to.not.be.empty;
+      });

@@ -12,5 +12,7 @@ namespace Application.Interfaces
     {
         ServiceResult<PagedResult<FrameDto>> GetAll(CommonQueryParameters parameters, LayoutType layout);
         ServiceResult<IEnumerable<FrameOptionDto>> GetAllOptions();
+        ServiceResult<PagedResult<FrameMetadataDto>> GetFrameMetadata (CommonQueryParameters parameters, LayoutType layout);
+        Dictionary<string, string>? GetImagePaths(int id);
     }
 }

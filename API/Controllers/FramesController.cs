@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Shared;
 using Domain.Entities;
+using System.Net.Http.Headers;
 
 namespace API.Controllers
 {
@@ -29,6 +30,30 @@ namespace API.Controllers
         {
             var result =  _frameService.GetById(frameId);
             return ToActionResult(result);
+        }
+        [HttpGet("{id:int}/images")]
+        public async Task<IActionResult> GetImages(int id)
+        {
+            var paths = _frameService.GetImagePaths(id);
+            if (paths == null) return NotFound();
+
+            using var content = new MultipartFormDataContent();
+            foreach (var (name, path) in paths)
+            {
+                var part = new StreamContent(System.IO.File.OpenRead(path));
+                part.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                content.Add(part, name, $"{name}.png");
+            }
+
+            Response.ContentType = content.Headers.ContentType!.ToString();
+            await content.CopyToAsync(Response.Body);
+            return new EmptyResult();
+        }
+        [HttpGet("metadata")]
+        public IActionResult GetFrameMetadata([FromQuery] CommonQueryParameters parameters, LayoutType layoutType = LayoutType.All)
+        {
+          var result = _frameService.GetFrameMetadata(parameters, layoutType);
+          return ToActionResult(result);
         }
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateFrameDto dto)

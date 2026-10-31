@@ -7,6 +7,7 @@ using Application.Interfaces.Commons;
 using Application.Services.Commons;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Shared;
 using Shared.Results;
@@ -36,7 +37,7 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         _topicRepository = topicRepository;
         _configuration = configuration;
     }
-
+    // =====BASE64=====
     public override async Task<ServiceResult<FrameDto>> CreateAsync(CreateFrameDto dto)
     {
         if (dto.BranchCode != null)
@@ -88,9 +89,9 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 Subject = string.Empty,
                 Background = string.Empty,
                 Overlay = string.Empty,
-                Base64Subject = dto.Subject,
-                Base64Background = dto.Background,
-                Base64Overlay = dto.Overlay,
+                //Base64Subject = dto.Subject,
+                //Base64Background = dto.Background,
+                //Base64Overlay = dto.Overlay,
                 CreatedAt = DateTime.UtcNow,
                 TopicsFrames = topics.Select(t => new TopicsFrames { TopicId = t.TopicId }).ToList()
             };
@@ -133,7 +134,60 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             return ServiceResult<FrameDto>.InternalServerError($"Lỗi tạo Frame: {ex.Message}");
         }
     }
+    // =====Multipart=====
+    public  ServiceResult<PagedResult<FrameMetadataDto>> GetFrameMetadata(CommonQueryParameters parameters, LayoutType layout)
+    {
+       try
+        {
+            string[] includes = { "Branch", "TopicsFrames.Topic" };
 
+            var genericParams = parameters.ToGenericQueryParameters();
+
+            Expression<Func<Frame, bool>>? predicate = layout == LayoutType.All
+                ? null
+                : f => f.TopicsFrames.Any(tf => tf.Topic.layoutType == layout);
+
+            var pagedFrames = _repository.GetPaged(predicate, genericParams, null, includes);
+            var result = pagedFrames.Items.Select(f => new FrameMetadataDto
+            {
+                FrameId = f.FrameId,
+                BranchCode = f.BranchCode,
+                BranchName = f.Branch?.BranchName ?? f.Branchname ?? string.Empty,
+                FrameName = f.FrameName,
+                Topics = f.TopicsFrames.Select(tf => new FrameTopicDto
+                {
+                    TopicId = tf.TopicId,
+                    TopicName = tf.Topic.TopicName,
+                    LayoutType = tf.Topic.layoutType
+                }).ToList(),
+                UpdateAt = f.UpdateAt
+            });
+
+            var pagedResult = new PagedResult<FrameMetadataDto>(
+                result,
+                pagedFrames.TotalCount,
+                pagedFrames.Index,
+                pagedFrames.PageSize
+            );
+
+            return ServiceResult<PagedResult<FrameMetadataDto>>.Success(pagedResult);
+        }
+        catch (Exception ex)
+        {
+            return ServiceResult<PagedResult<FrameMetadataDto>>.InternalServerError($"Lỗi truy vấn: {ex.Message}");
+        } 
+    }
+    public Dictionary<string, string>? GetImagePaths(int id)
+    {
+        var paths = new Dictionary<string, string>();
+        foreach (var type in new[] { "subject", "background", "overlay" })
+        {
+            var path = GetImagePath(id, type);
+            if (!File.Exists(path)) return null;
+            paths[type] = path;
+        }
+        return paths;
+    }
     public ServiceResult<PagedResult<FrameDto>> GetAll(CommonQueryParameters parameters, LayoutType layout)
     {
         try
@@ -253,6 +307,18 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
         }
     }
 
+    private string GetImagePath(int frameId, string imageType)
+    {
+        var storagePath = _configuration["FrameStorage:Path"]
+            ?? throw new InvalidOperationException("Thiếu cấu hình FrameStorage:Path");
+
+        var rootPath = Path.IsPathRooted(storagePath)
+            ? storagePath
+            : Path.Combine(Directory.GetCurrentDirectory(), storagePath);
+
+        return Path.Combine(rootPath, frameId.ToString(), $"{imageType}.png");
+    }
+
     private async Task<string> SaveImageAsync(int frameId, string imageType, byte[] imageBytes)
     {
         var storagePath = _configuration["FrameStorage:Path"]
@@ -288,5 +354,12 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
             FrameName = f.FrameName,
         });
         return ServiceResult<IEnumerable<FrameOptionDto>>.Success(result);
+    }
+
+    private static async Task<byte[]> ReadAllBytesAsync(IFormFile file)
+    {
+        await using var ms = new MemoryStream((int)file.Length);
+        await file.CopyToAsync(ms);
+        return ms.ToArray();
     }
 }

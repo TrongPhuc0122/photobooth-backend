@@ -249,6 +249,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("FrameId");
 
                     b.HasIndex("BranchId");
