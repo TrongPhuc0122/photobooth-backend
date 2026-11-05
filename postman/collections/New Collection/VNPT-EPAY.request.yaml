@@ -1,6 +1,6 @@
 $kind: http-request
 description: ""
-url: https://sandboxva.ecollect.vn:10003/ApiResf_VirtualAccount/services/registerVA
+url: https://sandboxva.ecollect.vn:8080/ApiResf_VirtualAccount/services/registerVA
 method: POST
 body:
   type: json
@@ -10,7 +10,7 @@ body:
 
     \        \"merchant_code\": \"VAP001\",\r
 
-    \        \"data\": \"2b44a5477fddc46be78960bfc5fc0ec581083f2cecc34d0557a76b3386011b819135ba73798e7bfb3103a4fb06b6028d11873a85152733b76c557aa5529cf80da1295bd067d75cb91cb3782284c7ad19bd34f796a2d04192ea5827fcf73585c9917bb1136c47bb75467e0a552363f97ee964dcd5eace413bf9ec30a30879aac42ab89516d7255e5e222293aafca0693dc7cb045675919cee33a2d18ee007ce0f297e6bee7f88fbb3d26ee8feaf87c80963b3f7e0cae49eadc6b7299586a9f4fd434f6b30bfd00680f6dbd0a2f07c689e1a7a1e95fb98a44fd066322015e84496\"\r
+    \        \"data\": \"2b44a5477fddc46be78960bfc5fc0ec581083f2cecc34d05ab6df15281776b0f9135ba73798e7bfb3103a4fb06b6028d11873a85152733b76c557aa5529cf80d02a09dd23ca74aafee220cdcc142c52cbd34f796a2d04192ea5827fcf73585c9cda86ed4ab751809467e0a552363f97ee964dcd5eace413bf9ec30a30879aac42ab89516d7255e5e222293aafca0693dc7cb045675919cee33a2d18ee007ce0f297e6bee7f88fbb3d26ee8feaf87c809b0517a192b65eb31b5fa1d494eba382740d0fc40950a507ff6dbd0a2f07c689e1a7a1e95fb98a44fd066322015e84496\"\r
 
     }"
 order: 2000

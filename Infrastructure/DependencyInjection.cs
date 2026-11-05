@@ -38,6 +38,7 @@ namespace Infrastructure
             services.AddScoped<ITopicService, TopicService>();
             services.AddScoped<ISummeryService, SummeryService>();
             services.AddScoped<ISettingService, SettingService>();
+            services.AddScoped<IStatusCodeService, StatusCodeService>();
             return services;
         }
     }

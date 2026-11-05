@@ -58,7 +58,7 @@ namespace Infrastructure.Context
         public DbSet<Topic> Topics { get; set; }
         public DbSet<TopicsFrames> TopicsFrames { get; set; }
         public DbSet<Setting> Settings { get; set; }
-
+        public DbSet<StatusCode> StatusCodes { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 

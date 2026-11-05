@@ -51,7 +51,9 @@ namespace Application.Mappings
             CreateMap<TimerSetting, TimerSettingDto>();
             CreateMap<CaptureSetting, CaptureSettingDto>();
             CreateMap<AudioSetting, AudioSettingDto>();
-            
+            // StatusCode 
+            CreateMap<StatusCode, StatusCodeDto>();
+            CreateMap<CreateStatusCodeDto, StatusCode>();
         }
     }
 }

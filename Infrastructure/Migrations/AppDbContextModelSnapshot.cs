@@ -137,6 +137,9 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("SettingId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("BoothId");
 
                     b.HasIndex("BranchId");
@@ -189,6 +192,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("BranchId");
 
@@ -413,6 +419,35 @@ namespace Infrastructure.Migrations
                     b.ToTable("SettingLog");
                 });
 
+            modelBuilder.Entity("Domain.Entities.StatusCode", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("StatusCodes");
+                });
+
             modelBuilder.Entity("Domain.Entities.Topic", b =>
                 {
                     b.Property<int>("TopicId")
@@ -444,6 +479,9 @@ namespace Infrastructure.Migrations
                     b.Property<string>("TopicName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("layoutType")
                         .HasColumnType("int");
@@ -503,6 +541,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdateAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UsageCount")

@@ -4,5 +4,6 @@ namespace Domain.Entities.Commons
     {
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
+        public DateTime UpdateAt {get; set; }
     }
 }
