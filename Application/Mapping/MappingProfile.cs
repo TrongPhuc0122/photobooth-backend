@@ -54,6 +54,9 @@ namespace Application.Mappings
             // StatusCode 
             CreateMap<StatusCode, StatusCodeDto>();
             CreateMap<CreateStatusCodeDto, StatusCode>();
+            // Video
+            CreateMap<Video, VideoDto>();
+            CreateMap<CreateVideoDto, Video>();
         }
     }
 }

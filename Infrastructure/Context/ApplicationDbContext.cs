@@ -24,7 +24,10 @@ namespace Infrastructure.Context
                 .WithMany(f => f.TopicsFrames)
                 .HasForeignKey(tf => tf.FrameId);
 
-
+            modelBuilder.Entity<Video>()
+                .HasIndex(v => v.InvoiceCode)
+                .IsUnique();
+                
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 if (!typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
@@ -59,6 +62,7 @@ namespace Infrastructure.Context
         public DbSet<TopicsFrames> TopicsFrames { get; set; }
         public DbSet<Setting> Settings { get; set; }
         public DbSet<StatusCode> StatusCodes { get; set; }
+        public DbSet<Video> Videos { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 

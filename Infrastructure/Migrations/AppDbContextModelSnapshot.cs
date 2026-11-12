@@ -506,6 +506,40 @@ namespace Infrastructure.Migrations
                     b.ToTable("TopicsFrames");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Video", b =>
+                {
+                    b.Property<int>("VideoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VideoId"));
+
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("VideoPath")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("VideoId");
+
+                    b.HasIndex("BoothId");
+
+                    b.HasIndex("InvoiceCode")
+                        .IsUnique();
+
+                    b.ToTable("Videos");
+                });
+
             modelBuilder.Entity("Domain.Entities.Voucher", b =>
                 {
                     b.Property<int>("VoucherId")
@@ -909,6 +943,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Frame");
 
                     b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Video", b =>
+                {
+                    b.HasOne("Domain.Entities.Booths", "Booth")
+                        .WithMany()
+                        .HasForeignKey("BoothId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booth");
                 });
 
             modelBuilder.Entity("Domain.Entities.Booths", b =>
