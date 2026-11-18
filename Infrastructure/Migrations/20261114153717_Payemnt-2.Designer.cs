@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261015103207_UpdateSetting_001")]
-    partial class UpdateSetting_001
+    [Migration("20261114153717_Payemnt-2")]
+    partial class Payemnt2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -140,6 +140,9 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("SettingId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("BoothId");
 
                     b.HasIndex("BranchId");
@@ -192,6 +195,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("BranchId");
 
@@ -251,6 +257,9 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("FrameId");
 
@@ -312,22 +321,120 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentId"));
 
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Method")
+                    b.Property<string>("InvoiceCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("account_no")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("TransactionRef")
+                    b.Property<string>("map_id")
                         .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("qr_rawdata")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("PaymentId");
 
+                    b.HasIndex("BoothId");
+
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PaymentNotification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BankCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("BankTranTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MapId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MerchantCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("PaymentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReferenceId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RequestId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("RequestTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("VaAcc")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("VaName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("PaymentNotifications");
                 });
 
             modelBuilder.Entity("Domain.Entities.Photo", b =>
@@ -413,6 +520,35 @@ namespace Infrastructure.Migrations
                     b.ToTable("SettingLog");
                 });
 
+            modelBuilder.Entity("Domain.Entities.StatusCode", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("StatusCodes");
+                });
+
             modelBuilder.Entity("Domain.Entities.Topic", b =>
                 {
                     b.Property<int>("TopicId")
@@ -445,6 +581,9 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("UpdateAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("layoutType")
                         .HasColumnType("int");
 
@@ -466,6 +605,40 @@ namespace Infrastructure.Migrations
                     b.HasIndex("FrameId");
 
                     b.ToTable("TopicsFrames");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Video", b =>
+                {
+                    b.Property<int>("VideoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VideoId"));
+
+                    b.Property<Guid>("BoothId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvoiceCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("VideoPath")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("VideoId");
+
+                    b.HasIndex("BoothId");
+
+                    b.HasIndex("InvoiceCode")
+                        .IsUnique();
+
+                    b.ToTable("Videos");
                 });
 
             modelBuilder.Entity("Domain.Entities.Voucher", b =>
@@ -503,6 +676,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdateAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UsageCount")
@@ -595,6 +771,24 @@ namespace Infrastructure.Migrations
                     b.Navigation("Booth");
 
                     b.Navigation("Voucher");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("Domain.Entities.Booths", "Booth")
+                        .WithMany()
+                        .HasForeignKey("BoothId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booth");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PaymentNotification", b =>
+                {
+                    b.HasOne("Domain.Entities.Payment", null)
+                        .WithMany("Notifications")
+                        .HasForeignKey("PaymentId");
                 });
 
             modelBuilder.Entity("Domain.Entities.Photo", b =>
@@ -870,6 +1064,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Topic");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Video", b =>
+                {
+                    b.HasOne("Domain.Entities.Booths", "Booth")
+                        .WithMany()
+                        .HasForeignKey("BoothId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booth");
+                });
+
             modelBuilder.Entity("Domain.Entities.Booths", b =>
                 {
                     b.Navigation("BoothErrors");
@@ -895,6 +1100,11 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Frame", b =>
                 {
                     b.Navigation("TopicsFrames");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Payment", b =>
+                {
+                    b.Navigation("Notifications");
                 });
 
             modelBuilder.Entity("Domain.Entities.Setting", b =>

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class DeleteSetting_2 : Migration
+    public partial class Payemnt1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -26,7 +26,8 @@ namespace Infrastructure.Migrations
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,19 +35,36 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Payments",
+                name: "Settings",
                 columns: table => new
                 {
-                    PaymentId = table.Column<int>(type: "int", nullable: false)
+                    SettingId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Method = table.Column<int>(type: "int", nullable: false),
-                    TransactionRef = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Camera = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Printer = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    System = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
+                    table.PrimaryKey("PK_Settings", x => x.SettingId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StatusCodes",
+                columns: table => new
+                {
+                    Code = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
+                    CreateAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StatusCodes", x => x.Code);
                 });
 
             migrationBuilder.CreateTable(
@@ -62,7 +80,8 @@ namespace Infrastructure.Migrations
                     BranchCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreateAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -86,38 +105,12 @@ namespace Infrastructure.Migrations
                     UsageCount = table.Column<int>(type: "int", nullable: false),
                     Creator = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Vouchers", x => x.VoucherId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Booths",
-                columns: table => new
-                {
-                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    BoothIp = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BoothName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Brand = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    BranchId = table.Column<int>(type: "int", nullable: false),
-                    SettingId = table.Column<int>(type: "int", nullable: true),
-                    SettingHistoryId = table.Column<int>(type: "int", nullable: true),
-                    Creator = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Booths", x => x.BoothId);
-                    table.ForeignKey(
-                        name: "FK_Booths_Branches_BranchId",
-                        column: x => x.BranchId,
-                        principalTable: "Branches",
-                        principalColumn: "BranchId",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -136,6 +129,7 @@ namespace Infrastructure.Migrations
                     Base64Background = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Base64Overlay = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     BranchId = table.Column<int>(type: "int", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -148,6 +142,63 @@ namespace Infrastructure.Migrations
                         column: x => x.BranchId,
                         principalTable: "Branches",
                         principalColumn: "BranchId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Booths",
+                columns: table => new
+                {
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BoothIp = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BoothName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Brand = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BranchId = table.Column<int>(type: "int", nullable: false),
+                    SettingId = table.Column<int>(type: "int", nullable: true),
+                    Creator = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Booths", x => x.BoothId);
+                    table.ForeignKey(
+                        name: "FK_Booths_Branches_BranchId",
+                        column: x => x.BranchId,
+                        principalTable: "Branches",
+                        principalColumn: "BranchId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Booths_Settings_SettingId",
+                        column: x => x.SettingId,
+                        principalTable: "Settings",
+                        principalColumn: "SettingId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TopicsFrames",
+                columns: table => new
+                {
+                    TopicId = table.Column<int>(type: "int", nullable: false),
+                    FrameId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TopicsFrames", x => new { x.TopicId, x.FrameId });
+                    table.ForeignKey(
+                        name: "FK_TopicsFrames_Frames_FrameId",
+                        column: x => x.FrameId,
+                        principalTable: "Frames",
+                        principalColumn: "FrameId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TopicsFrames_Topics_TopicId",
+                        column: x => x.TopicId,
+                        principalTable: "Topics",
+                        principalColumn: "TopicId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -249,6 +300,32 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Payments",
+                columns: table => new
+                {
+                    PaymentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    InvoiceCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    map_id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    account_no = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    qr_rawdata = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
+                    table.ForeignKey(
+                        name: "FK_Payments_Booths_BoothId",
+                        column: x => x.BoothId,
+                        principalTable: "Booths",
+                        principalColumn: "BoothId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Photos",
                 columns: table => new
                 {
@@ -273,27 +350,87 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TopicsFrames",
+                name: "SettingLog",
                 columns: table => new
                 {
-                    TopicId = table.Column<int>(type: "int", nullable: false),
-                    FrameId = table.Column<int>(type: "int", nullable: false)
+                    SettingLogId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SettingId = table.Column<int>(type: "int", nullable: false),
+                    SettingTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SettingStatus = table.Column<bool>(type: "bit", nullable: false),
+                    CreateAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TopicsFrames", x => new { x.TopicId, x.FrameId });
+                    table.PrimaryKey("PK_SettingLog", x => x.SettingLogId);
                     table.ForeignKey(
-                        name: "FK_TopicsFrames_Frames_FrameId",
-                        column: x => x.FrameId,
-                        principalTable: "Frames",
-                        principalColumn: "FrameId",
+                        name: "FK_SettingLog_Booths_BoothId",
+                        column: x => x.BoothId,
+                        principalTable: "Booths",
+                        principalColumn: "BoothId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_TopicsFrames_Topics_TopicId",
-                        column: x => x.TopicId,
-                        principalTable: "Topics",
-                        principalColumn: "TopicId",
+                        name: "FK_SettingLog_Settings_SettingId",
+                        column: x => x.SettingId,
+                        principalTable: "Settings",
+                        principalColumn: "SettingId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Videos",
+                columns: table => new
+                {
+                    VideoId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BoothId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    InvoiceCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    VideoPath = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Videos", x => x.VideoId);
+                    table.ForeignKey(
+                        name: "FK_Videos_Booths_BoothId",
+                        column: x => x.BoothId,
+                        principalTable: "Booths",
+                        principalColumn: "BoothId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PaymentNotifications",
+                columns: table => new
+                {
+                    NotificationId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ReceivedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    PaymentId = table.Column<int>(type: "int", nullable: true),
+                    RequestId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    RequestTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    BankTranTime = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ReferenceId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    MapId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Signature = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    MerchantCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Fee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    VaName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    VaAcc = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    BankCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    BankName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Remark = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PaymentNotifications", x => x.NotificationId);
+                    table.ForeignKey(
+                        name: "FK_PaymentNotifications_Payments_PaymentId",
+                        column: x => x.PaymentId,
+                        principalTable: "Payments",
+                        principalColumn: "PaymentId");
                 });
 
             migrationBuilder.CreateIndex(
@@ -305,6 +442,11 @@ namespace Infrastructure.Migrations
                 name: "IX_Booths_BranchId",
                 table: "Booths",
                 column: "BranchId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Booths_SettingId",
+                table: "Booths",
+                column: "SettingId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Frames_BranchId",
@@ -322,14 +464,45 @@ namespace Infrastructure.Migrations
                 column: "VoucherId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PaymentNotifications_PaymentId",
+                table: "PaymentNotifications",
+                column: "PaymentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payments_BoothId",
+                table: "Payments",
+                column: "BoothId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Photos_BoothId",
                 table: "Photos",
                 column: "BoothId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SettingLog_BoothId",
+                table: "SettingLog",
+                column: "BoothId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SettingLog_SettingId",
+                table: "SettingLog",
+                column: "SettingId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TopicsFrames_FrameId",
                 table: "TopicsFrames",
                 column: "FrameId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Videos_BoothId",
+                table: "Videos",
+                column: "BoothId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Videos_InvoiceCode",
+                table: "Videos",
+                column: "InvoiceCode",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -348,19 +521,28 @@ namespace Infrastructure.Migrations
                 name: "Invoices");
 
             migrationBuilder.DropTable(
-                name: "Payments");
+                name: "PaymentNotifications");
 
             migrationBuilder.DropTable(
                 name: "Photos");
 
             migrationBuilder.DropTable(
+                name: "SettingLog");
+
+            migrationBuilder.DropTable(
+                name: "StatusCodes");
+
+            migrationBuilder.DropTable(
                 name: "TopicsFrames");
+
+            migrationBuilder.DropTable(
+                name: "Videos");
 
             migrationBuilder.DropTable(
                 name: "Vouchers");
 
             migrationBuilder.DropTable(
-                name: "Booths");
+                name: "Payments");
 
             migrationBuilder.DropTable(
                 name: "Frames");
@@ -369,7 +551,13 @@ namespace Infrastructure.Migrations
                 name: "Topics");
 
             migrationBuilder.DropTable(
+                name: "Booths");
+
+            migrationBuilder.DropTable(
                 name: "Branches");
+
+            migrationBuilder.DropTable(
+                name: "Settings");
         }
     }
 }

@@ -63,6 +63,7 @@ namespace Infrastructure.Context
         public DbSet<Setting> Settings { get; set; }
         public DbSet<StatusCode> StatusCodes { get; set; }
         public DbSet<Video> Videos { get; set; }
+        public DbSet<PaymentNotification> PaymentNotifications { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 

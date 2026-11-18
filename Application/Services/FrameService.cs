@@ -89,9 +89,9 @@ public class FrameService : GenericService<Frame, FrameDto, CreateFrameDto, int>
                 Subject = string.Empty,
                 Background = string.Empty,
                 Overlay = string.Empty,
-                //Base64Subject = dto.Subject,
-                //Base64Background = dto.Background,
-                //Base64Overlay = dto.Overlay,
+                Base64Subject = dto.Subject,
+                Base64Background = dto.Background,
+                Base64Overlay = dto.Overlay,
                 CreatedAt = DateTime.UtcNow,
                 TopicsFrames = topics.Select(t => new TopicsFrames { TopicId = t.TopicId }).ToList()
             };

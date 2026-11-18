@@ -5,6 +5,7 @@ using Microsoft.Extensions.FileProviders;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
+using Application.DTOs.Identites.Payment;
 
 var builder = WebApplication.CreateBuilder(args);
 // FE
@@ -27,6 +28,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
     });
+builder.Services.Configure<EpayOptions>(builder.Configuration.GetSection("Epay"));
+
 // Gọi DependencyInjection của Infrastructure (đã có DbContext + Services bên trong)
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<BoothMonitorWorker>();

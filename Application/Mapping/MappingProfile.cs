@@ -3,6 +3,7 @@ using Application.DTOs.Identites;
 using AutoMapper;
 using Domain.Entities;
 using Application.DTOs;
+using Application.DTOs.Identites.Payment;
 
 namespace Application.Mappings
 {
@@ -57,6 +58,9 @@ namespace Application.Mappings
             // Video
             CreateMap<Video, VideoDto>();
             CreateMap<CreateVideoDto, Video>();
+            // Payment
+            CreateMap<Payment, PaymentDto>();
+            CreateMap<CreatePaymentDto, Payment>();
         }
     }
 }

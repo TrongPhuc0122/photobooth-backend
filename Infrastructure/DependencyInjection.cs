@@ -39,6 +39,8 @@ namespace Infrastructure
             services.AddScoped<ISummeryService, SummeryService>();
             services.AddScoped<ISettingService, SettingService>();
             services.AddScoped<IStatusCodeService, StatusCodeService>();
+            services.AddScoped<IPaymentService, PaymentService>();
+            services.AddHttpClient<IEPAYClientService, EPAYClientService>();
             return services;
         }
     }
